@@ -4,4 +4,4 @@ outputs/
 work/
 *.tmp
 *.log
-
+*.zip
