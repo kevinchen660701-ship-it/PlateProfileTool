@@ -433,11 +433,41 @@
       targetID: document.getElementById("calcTargetID"),
     };
     const calcResult = document.getElementById("calcResult");
+    const storageKey = "plateProfileTool.inputs.v1";
     let lastToolCalc = null;
     let toolAnimationFrame = null;
     let toolAnimationStart = null;
     let toolAnimationProgress = null;
     let showToolPath = false;
+
+    function allStoredFields() {
+      return { ...inputs, ...calcFields };
+    }
+
+    function loadStoredInputs() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "{}");
+        Object.entries(allStoredFields()).forEach(([key, input]) => {
+          if (Object.prototype.hasOwnProperty.call(saved, key)) {
+            input.value = saved[key];
+          }
+        });
+      } catch (error) {
+        // Ignore storage failures so drawing still works in privacy-restricted browsers.
+      }
+    }
+
+    function saveStoredInputs() {
+      try {
+        const saved = {};
+        Object.entries(allStoredFields()).forEach(([key, input]) => {
+          saved[key] = input.value;
+        });
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+      } catch (error) {
+        // Ignore storage failures so drawing still works in privacy-restricted browsers.
+      }
+    }
 
     function numberOf(input) {
       return Number.parseFloat(input.value);
@@ -1146,6 +1176,7 @@
         setInputValue(inputs.toolZ1, lastToolCalc.z1);
         setInputValue(inputs.toolZ2, lastToolCalc.z2);
         setInputValue(inputs.toolZ3, lastToolCalc.z3);
+        saveStoredInputs();
         stopToolAnimation();
         draw();
         closeToolCalcModal();
@@ -1157,10 +1188,13 @@
     toolCalcModal.addEventListener("click", event => {
       if (event.target === toolCalcModal) closeToolCalcModal();
     });
+    Object.values(calcFields).forEach(input => input.addEventListener("input", saveStoredInputs));
     Object.values(inputs).forEach(input => input.addEventListener("input", () => {
+      saveStoredInputs();
       stopToolAnimation();
       draw();
     }));
+    loadStoredInputs();
     draw();
   </script>
 </body>
