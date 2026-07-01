@@ -543,13 +543,6 @@
     }
 
     function openToolCalcModal() {
-      setInputValue(calcFields.actualOD, numberOf(inputs.od));
-      setInputValue(calcFields.actualID, numberOf(inputs.id));
-      setInputValue(calcFields.prevZ1, numberOf(inputs.toolZ1));
-      setInputValue(calcFields.prevZ2, numberOf(inputs.toolZ2));
-      setInputValue(calcFields.prevZ3, numberOf(inputs.toolZ3));
-      if (!calcFields.targetOD.value) setInputValue(calcFields.targetOD, numberOf(inputs.od));
-      if (!calcFields.targetID.value) setInputValue(calcFields.targetID, numberOf(inputs.id));
       lastToolCalc = null;
       calcResult.textContent = "請輸入數值後按「計算Z軸」。";
       toolCalcModal.classList.add("open");
