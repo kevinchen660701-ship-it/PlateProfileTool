@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>銅盤剖面圖計算</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --line: #b8c0ca;
+      --text: #20242a;
+      --muted: #5f6670;
+      --blue: #2c5fb8;
+      --red: #bb2f2a;
+      --orange: #df9a63;
+      --z0: #4a709b;
+      --purple: #764aa1;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+    }
+
+    main {
+      width: min(1440px, calc(100vw - 32px));
+      margin: 20px auto 28px;
+      display: grid;
+      grid-template-columns: 430px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    aside, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    aside {
+      padding: 16px;
+      position: sticky;
+      top: 16px;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      column-gap: 12px;
+      align-items: start;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.25;
+      grid-column: 1 / -1;
+    }
+
+    .field {
+      margin: 8px 0;
+      grid-column: span 3;
+    }
+
+    .field.third {
+      grid-column: span 2;
+    }
+
+    .group-title {
+      margin: 18px 0 8px;
+      padding-top: 12px;
+      border-top: 1px solid #d7dee7;
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 700;
+      grid-column: 1 / -1;
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    input {
+      width: 100%;
+      height: 38px;
+      border: 1px solid #c7cfd8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 18px;
+      font-family: inherit;
+      background: white;
+    }
+
+    input[type="range"] {
+      padding: 0;
+    }
+
+    button {
+      width: 100%;
+      height: 42px;
+      margin-top: 12px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--blue);
+      color: white;
+      font-size: 17px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      grid-column: 1 / -1;
+    }
+
+    #drawButton {
+      grid-column: span 3;
+      align-self: end;
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+
+    #toolPathToggleButton.is-on {
+      background: #179160;
+    }
+
+    #toolPathToggleButton,
+    #animateToolButton {
+      grid-column: span 3;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(32, 36, 42, 0.36);
+      z-index: 10;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(620px, calc(100vw - 48px));
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 18px 48px rgba(32, 36, 42, 0.22);
+      padding: 14px;
+    }
+
+    .modal h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      column-gap: 10px;
+    }
+
+    .modal-grid .group-title {
+      grid-column: 1 / -1;
+    }
+
+    .modal-grid .field {
+      grid-column: span 3;
+    }
+
+    .modal-grid .field.third {
+      grid-column: span 2;
+    }
+
+    .modal .group-title {
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+
+    .modal .field {
+      margin: 5px 0;
+    }
+
+    .modal input {
+      height: 34px;
+      font-size: 16px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.45fr 0.8fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .modal-actions button {
+      margin-top: 0;
+      grid-column: auto;
+      white-space: nowrap;
+      font-size: 16px;
+    }
+
+    .modal-actions .muted-button {
+      background: #e9eef4;
+      color: var(--text);
+    }
+
+    .calc-result {
+      margin-top: 10px;
+      padding: 10px;
+      min-height: 58px;
+      border-radius: 6px;
+      background: #f2f5f9;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .readout {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f2f5f9;
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.65;
+      grid-column: 1 / -1;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: var(--red);
+      font-weight: 700;
+      grid-column: 1 / -1;
+    }
+
+    .plan-help {
+      grid-column: 1 / -1;
+      margin-top: 14px;
+      padding: 10px;
+      border: 1px solid #d7dee7;
+      border-radius: 6px;
+      background: #fbfcfd;
+    }
+
+    .plan-title {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .plan-help canvas {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #d7dee7;
+      border-radius: 5px;
+      background: #ffffff;
+    }
+
+    section {
+      padding: 10px;
+      overflow: auto;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      min-width: 960px;
+      height: auto;
+      border-radius: 6px;
+      background: #fbfcfd;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <aside>
+      <h1>銅盤剖面圖</h1>
+      <div class="field">
+        <label for="outerR"><span>外徑半徑 R</span><span>mm</span></label>
+        <input id="outerR" type="number" step="0.001" value="370">
+      </div>
+      <div class="field">
+        <label for="innerR"><span>內孔半徑 r</span><span>mm</span></label>
+        <input id="innerR" type="number" step="0.001" value="50">
+      </div>
+      <div class="field">
+        <label for="od"><span>OD</span><span>mm</span></label>
+        <input id="od" type="number" step="0.001" value="-0.08">
+      </div>
+      <div class="field">
+        <label for="id"><span>ID</span><span>mm</span></label>
+        <input id="id" type="number" step="0.001" value="0">
+      </div>
+      <div class="group-title">車刀路徑</div>
+      <div class="field">
+        <label for="toolZero"><span>車刀Z零點位置</span><span>mm</span></label>
+        <input id="toolZero" type="number" step="0.001" value="-0.08">
+      </div>
+      <div class="field">
+        <label for="thickness"><span>盤厚顯示</span><span>mm</span></label>
+        <input id="thickness" type="number" step="0.001" value="0.22">
+      </div>
+      <div class="field third">
+        <label for="toolZ1"><span>Z1：C位置</span><span>mm</span></label>
+        <input id="toolZ1" type="number" step="0.001" value="0">
+      </div>
+      <div class="field third">
+        <label for="toolZ2"><span>Z2：AC中點</span><span>mm</span></label>
+        <input id="toolZ2" type="number" step="0.001" value="0.04">
+      </div>
+      <div class="field third">
+        <label for="toolZ3"><span>Z3：A位置</span><span>mm</span></label>
+        <input id="toolZ3" type="number" step="0.001" value="0">
+      </div>
+      <div class="field">
+        <label for="zScale"><span>Z 顯示倍率</span><span id="zScaleValue">550</span></label>
+        <input id="zScale" type="range" min="80" max="2200" step="10" value="550">
+      </div>
+      <button id="drawButton" type="button">重畫</button>
+      <button id="toolPathToggleButton" type="button">車刀路徑</button>
+      <button id="animateToolButton" type="button">車刀動畫</button>
+      <button id="calcToolButton" type="button">計算車刀Z值</button>
+      <div class="readout" id="readout"></div>
+      <div class="status" id="status"></div>
+      <div class="plan-help">
+        <div class="plan-title">銅盤 OD / ID / R / r 平面說明圖</div>
+        <canvas id="planCanvas" width="760" height="480"></canvas>
+      </div>
+    </aside>
+
+    <section>
+      <canvas id="profileCanvas" width="1500" height="940"></canvas>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="toolCalcModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="toolCalcTitle">
+      <h2 id="toolCalcTitle">計算車刀Z值</h2>
+      <div class="modal-grid">
+        <div class="group-title">實際值</div>
+        <div class="field">
+          <label for="calcActualOD"><span>OD</span><span>mm</span></label>
+          <input id="calcActualOD" type="number" step="0.001">
+        </div>
+        <div class="field">
+          <label for="calcActualID"><span>ID</span><span>mm</span></label>
+          <input id="calcActualID" type="number" step="0.001">
+        </div>
+
+        <div class="group-title">前值</div>
+        <div class="field third">
+          <label for="calcPrevZ1"><span>Z1</span><span>mm</span></label>
+          <input id="calcPrevZ1" type="number" step="0.001">
+        </div>
+        <div class="field third">
+          <label for="calcPrevZ2"><span>Z2</span><span>mm</span></label>
+          <input id="calcPrevZ2" type="number" step="0.001">
+        </div>
+        <div class="field third">
+          <label for="calcPrevZ3"><span>Z3</span><span>mm</span></label>
+          <input id="calcPrevZ3" type="number" step="0.001">
+        </div>
+
+        <div class="group-title">目標值</div>
+        <div class="field">
+          <label for="calcTargetOD"><span>OD</span><span>mm</span></label>
+          <input id="calcTargetOD" type="number" step="0.001">
+        </div>
+        <div class="field">
+          <label for="calcTargetID"><span>ID</span><span>mm</span></label>
+          <input id="calcTargetID" type="number" step="0.001">
+        </div>
+      </div>
+      <div class="calc-result" id="calcResult">請輸入數值後按「計算Z軸」。</div>
+      <div class="modal-actions">
+        <button id="calcRunButton" type="button">計算Z軸</button>
+        <button id="calcApplyButton" type="button">計算Z值代入主視窗</button>
+        <button class="muted-button" id="calcExitButton" type="button">Exit</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("profileCanvas");
+    const ctx = canvas.getContext("2d");
+    const planCanvas = document.getElementById("planCanvas");
+    const planCtx = planCanvas.getContext("2d");
+    const inputs = {
+      outerR: document.getElementById("outerR"),
+      innerR: document.getElementById("innerR"),
+      od: document.getElementById("od"),
+      id: document.getElementById("id"),
+      toolZero: document.getElementById("toolZero"),
+      toolZ1: document.getElementById("toolZ1"),
+      toolZ2: document.getElementById("toolZ2"),
+      toolZ3: document.getElementById("toolZ3"),
+      thickness: document.getElementById("thickness"),
+      zScale: document.getElementById("zScale"),
+    };
+    const readout = document.getElementById("readout");
+    const status = document.getElementById("status");
+    const zScaleValue = document.getElementById("zScaleValue");
+    const toolCalcModal = document.getElementById("toolCalcModal");
+    const calcFields = {
+      actualOD: document.getElementById("calcActualOD"),
+      actualID: document.getElementById("calcActualID"),
+      prevZ1: document.getElementById("calcPrevZ1"),
+      prevZ2: document.getElementById("calcPrevZ2"),
+      prevZ3: document.getElementById("calcPrevZ3"),
+      targetOD: document.getElementById("calcTargetOD"),
+      targetID: document.getElementById("calcTargetID"),
+    };
+    const calcResult = document.getElementById("calcResult");
+    let lastToolCalc = null;
+    let toolAnimationFrame = null;
+    let toolAnimationStart = null;
+    let toolAnimationProgress = null;
+    let showToolPath = false;
+
+    function numberOf(input) {
+      return Number.parseFloat(input.value);
+    }
+
+    function fmt(value, digits = 4) {
+      if (!Number.isFinite(value)) return "-";
+      const rounded = Number(value.toFixed(digits));
+      return Object.is(rounded, -0) ? "0" : String(rounded);
+    }
+
+    function signedFmt(value, digits = 4) {
+      if (!Number.isFinite(value)) return "-";
+      const text = fmt(value, digits);
+      return value > 0 ? `+${text}` : text;
+    }
+
+    function calcNumber(input) {
+      return Number.parseFloat(input.value);
+    }
+
+    function setInputValue(input, value) {
+      input.value = fmt(value, 4);
+    }
+
+    function pointValues(odValue, idValue) {
+      const za = 0;
+      const zc = odValue;
+      const zx = (za + zc) / 2 + idValue;
+      return { za, zx, zc };
+    }
+
+    function computeToolZValues() {
+      const actualOD = calcNumber(calcFields.actualOD);
+      const actualID = calcNumber(calcFields.actualID);
+      const prevZ1 = calcNumber(calcFields.prevZ1);
+      const prevZ2 = calcNumber(calcFields.prevZ2);
+      const prevZ3 = calcNumber(calcFields.prevZ3);
+      const targetOD = calcNumber(calcFields.targetOD);
+      const targetID = calcNumber(calcFields.targetID);
+
+      if (![actualOD, actualID, prevZ1, prevZ2, prevZ3, targetOD, targetID].every(Number.isFinite)) {
+        throw new Error("請輸入完整有效數字");
+      }
+
+      const actual = pointValues(actualOD, actualID);
+      const target = pointValues(targetOD, targetID);
+      const d1 = actual.zc - target.zc;
+      const d2 = actual.zx - target.zx;
+      const d3 = actual.za - target.za;
+
+      return {
+        actual,
+        target,
+        d1,
+        d2,
+        d3,
+        z1: prevZ1 + d1,
+        z2: prevZ2 + d2,
+        z3: prevZ3 + d3,
+      };
+    }
+
+    function showToolCalcResult(result) {
+      calcResult.innerHTML = [
+        `實際：Zc=${fmt(result.actual.zc, 4)}, Zx=${fmt(result.actual.zx, 4)}, Za=${fmt(result.actual.za, 4)}`,
+        `目標：Zc=${fmt(result.target.zc, 4)}, Zx=${fmt(result.target.zx, 4)}, Za=${fmt(result.target.za, 4)}`,
+        `C點修正：實際Zc - 目標Zc = ${fmt(result.actual.zc, 4)} - ${fmt(result.target.zc, 4)} = ${signedFmt(result.d1, 4)}，Z1 = 前值 + ${signedFmt(result.d1, 4)}`,
+        `X點修正：實際Zx - 目標Zx = ${fmt(result.actual.zx, 4)} - ${fmt(result.target.zx, 4)} = ${signedFmt(result.d2, 4)}，Z2 = 前值 + ${signedFmt(result.d2, 4)}`,
+        `A點修正：實際Za - 目標Za = ${fmt(result.actual.za, 4)} - ${fmt(result.target.za, 4)} = ${signedFmt(result.d3, 4)}，Z3 = 前值 + ${signedFmt(result.d3, 4)}`,
+        `<b>新車刀：Z1=${fmt(result.z1, 4)}, Z2=${fmt(result.z2, 4)}, Z3=${fmt(result.z3, 4)}</b>`,
+      ].join("<br>");
+    }
+
+    function openToolCalcModal() {
+      setInputValue(calcFields.actualOD, numberOf(inputs.od));
+      setInputValue(calcFields.actualID, numberOf(inputs.id));
+      setInputValue(calcFields.prevZ1, numberOf(inputs.toolZ1));
+      setInputValue(calcFields.prevZ2, numberOf(inputs.toolZ2));
+      setInputValue(calcFields.prevZ3, numberOf(inputs.toolZ3));
+      if (!calcFields.targetOD.value) setInputValue(calcFields.targetOD, numberOf(inputs.od));
+      if (!calcFields.targetID.value) setInputValue(calcFields.targetID, numberOf(inputs.id));
+      lastToolCalc = null;
+      calcResult.textContent = "請輸入數值後按「計算Z軸」。";
+      toolCalcModal.classList.add("open");
+      calcFields.targetOD.focus();
+    }
+
+    function closeToolCalcModal() {
+      toolCalcModal.classList.remove("open");
+    }
+
+    function circleCenter(p1, p2, p3) {
+      const [x1, y1] = p1;
+      const [x2, y2] = p2;
+      const [x3, y3] = p3;
+      const det = 2 * (x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2));
+      if (Math.abs(det) < 1e-12) return null;
+      const ux = (
+        (x1 * x1 + y1 * y1) * (y2 - y3) +
+        (x2 * x2 + y2 * y2) * (y3 - y1) +
+        (x3 * x3 + y3 * y3) * (y1 - y2)
+      ) / det;
+      const uy = (
+        (x1 * x1 + y1 * y1) * (x3 - x2) +
+        (x2 * x2 + y2 * y2) * (x1 - x3) +
+        (x3 * x3 + y3 * y3) * (x2 - x1)
+      ) / det;
+      return { x: ux, z: uy, radius: Math.hypot(x1 - ux, y1 - uy) };
+    }
+
+    function makeProfile({ r, R, za, zc, zx }) {
+      const mid = (r + R) / 2;
+      const center = circleCenter([r, zc], [mid, zx], [R, za]);
+
+      if (!center) {
+        return {
+          center,
+          zAt(x) {
+            const t = (x - r) / (R - r);
+            return zc + (za - zc) * t;
+          },
+        };
+      }
+
+      const sign = Math.sign(zc - center.z) || Math.sign(za - center.z) || 1;
+      return {
+        center,
+        zAt(x) {
+          const inside = center.radius * center.radius - (x - center.x) * (x - center.x);
+          return center.z + sign * Math.sqrt(Math.max(0, inside));
+        },
+      };
+    }
+
+    function drawDashedLine(x1, y1, x2, y2, color, width, dash = 20, gap = 12) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.setLineDash([dash, gap]);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function labelBox(text, x, y, color, align = "left") {
+      ctx.font = "700 26px Microsoft JhengHei, Arial";
+      const padX = 10;
+      const w = ctx.measureText(text).width + padX * 2;
+      const h = 42;
+      const bx = align === "right" ? x - w : x;
+      ctx.fillStyle = "rgba(255,255,255,0.96)";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      roundRect(bx, y, w, h, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = color;
+      ctx.fillText(text, bx + padX, y + 29);
+      return { x: bx, y, w, h };
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawUprightCutter(px, py) {
+      ctx.save();
+      ctx.translate(px, py);
+
+      ctx.shadowColor = "rgba(0, 0, 0, 0.22)";
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 4;
+      ctx.shadowOffsetY = 5;
+
+      ctx.fillStyle = "#343a40";
+      ctx.strokeStyle = "#1f2429";
+      ctx.lineWidth = 2;
+      roundRect(-16, -150, 32, 112, 5);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#24292f";
+      ctx.beginPath();
+      ctx.moveTo(-28, -62);
+      ctx.lineTo(28, -62);
+      ctx.lineTo(20, -25);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(-20, -25);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#f2b632";
+      ctx.strokeStyle = "#9b6b12";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-18, -34);
+      ctx.lineTo(18, -34);
+      ctx.lineTo(0, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.shadowColor = "transparent";
+      ctx.fillStyle = "#f5f1e9";
+      ctx.strokeStyle = "#8e8a82";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -49, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#565b60";
+      ctx.beginPath();
+      ctx.arc(0, -49, 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#111820";
+      ctx.beginPath();
+      ctx.arc(0, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawArrowOn(context, x1, y1, x2, y2, color, width = 3) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const head = 12;
+      context.save();
+      context.strokeStyle = color;
+      context.fillStyle = color;
+      context.lineWidth = width;
+      context.beginPath();
+      context.moveTo(x1, y1);
+      context.lineTo(x2, y2);
+      context.stroke();
+      context.beginPath();
+      context.moveTo(x2, y2);
+      context.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      context.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      context.closePath();
+      context.fill();
+      context.restore();
+    }
+
+    function drawRedTarget(context, x, y) {
+      context.save();
+      context.fillStyle = "#bb2f2a";
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 3;
+      context.beginPath();
+      context.arc(x, y, 10, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.fillStyle = "#ffffff";
+      context.beginPath();
+      context.arc(x, y, 3, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+
+    function drawPlanDiagram(R, r) {
+      const W = planCanvas.width;
+      const H = planCanvas.height;
+      const cx = W * 0.48;
+      const cy = H * 0.5;
+      const outerRadius = 170;
+      const innerRadius = Math.max(42, Math.min(70, outerRadius * (r / R)));
+
+      planCtx.clearRect(0, 0, W, H);
+      planCtx.fillStyle = "#ffffff";
+      planCtx.fillRect(0, 0, W, H);
+
+      planCtx.fillStyle = "#f2d2b8";
+      planCtx.strokeStyle = "#a76b42";
+      planCtx.lineWidth = 4;
+      planCtx.beginPath();
+      planCtx.arc(cx, cy, outerRadius, 0, Math.PI * 2);
+      planCtx.fill();
+      planCtx.stroke();
+
+      planCtx.fillStyle = "#ffffff";
+      planCtx.strokeStyle = "#6b7280";
+      planCtx.lineWidth = 3;
+      planCtx.beginPath();
+      planCtx.arc(cx, cy, innerRadius, 0, Math.PI * 2);
+      planCtx.fill();
+      planCtx.stroke();
+
+      planCtx.fillStyle = "#20242a";
+      planCtx.beginPath();
+      planCtx.arc(cx, cy, 5, 0, Math.PI * 2);
+      planCtx.fill();
+
+      const measureRadius = innerRadius + 16;
+      const cAngle = -0.18;
+      const c = {
+        x: cx + Math.cos(cAngle) * measureRadius,
+        y: cy + Math.sin(cAngle) * measureRadius,
+      };
+      const yAngle = 0.92;
+      const yPoint = {
+        x: cx + Math.cos(yAngle) * measureRadius,
+        y: cy + Math.sin(yAngle) * measureRadius,
+      };
+      const chordHalf = Math.sqrt(Math.max(0, outerRadius * outerRadius - measureRadius * measureRadius));
+      const normal = { x: -Math.sin(yAngle), y: Math.cos(yAngle) };
+      const end1 = { x: yPoint.x + normal.x * chordHalf, y: yPoint.y + normal.y * chordHalf };
+      const end2 = { x: yPoint.x - normal.x * chordHalf, y: yPoint.y - normal.y * chordHalf };
+      const a = end1.x > end2.x ? end1 : end2;
+      const b = end1.x > end2.x ? end2 : end1;
+      const xPoint = { x: (c.x + a.x) / 2, y: (c.y + a.y) / 2 };
+      const odLineYAtX = yPoint.y;
+
+      drawArrowOn(planCtx, cx, cy, cx, cy - outerRadius, "#bb2f2a", 3);
+      planCtx.fillStyle = "#bb2f2a";
+      planCtx.font = "700 42px Microsoft JhengHei, Arial";
+      planCtx.fillText("R", cx - 48, cy - outerRadius * 0.48);
+
+      drawArrowOn(planCtx, cx, cy, cx + innerRadius * 0.70, cy - innerRadius * 0.70, "#bb2f2a", 4);
+      planCtx.fillStyle = "#bb2f2a";
+      planCtx.font = "700 42px Microsoft JhengHei, Arial";
+      planCtx.fillText("r", cx + innerRadius * 0.48, cy - innerRadius * 0.78);
+
+      planCtx.save();
+      planCtx.strokeStyle = "rgba(187, 47, 42, 0.34)";
+      planCtx.lineWidth = 3;
+      planCtx.setLineDash([9, 8]);
+      planCtx.beginPath();
+      planCtx.arc(cx, cy, measureRadius, 0, yAngle);
+      planCtx.stroke();
+      planCtx.restore();
+
+      planCtx.strokeStyle = "#2c5fb8";
+      planCtx.lineWidth = 4;
+      planCtx.beginPath();
+      planCtx.moveTo(b.x, b.y);
+      planCtx.lineTo(a.x, a.y);
+      planCtx.stroke();
+
+      planCtx.strokeStyle = "#2c5fb8";
+      planCtx.lineWidth = 3;
+      planCtx.beginPath();
+      planCtx.moveTo(c.x, c.y);
+      planCtx.lineTo(a.x, a.y);
+      planCtx.stroke();
+
+      planCtx.fillStyle = "#bb2f2a";
+      planCtx.font = "700 34px Microsoft JhengHei, Arial";
+      planCtx.fillText("OD", cx - 120, cy + 96);
+      planCtx.fillText("ID", c.x + 38, c.y - 42);
+
+      drawRedTarget(planCtx, xPoint.x, xPoint.y);
+      planCtx.strokeStyle = "#bb2f2a";
+      planCtx.lineWidth = 4;
+      planCtx.beginPath();
+      planCtx.moveTo(xPoint.x + 8, xPoint.y - 8);
+      planCtx.lineTo(xPoint.x + 58, xPoint.y - 46);
+      planCtx.stroke();
+      planCtx.fillStyle = "#bb2f2a";
+      planCtx.fillText("X", xPoint.x + 64, xPoint.y - 48);
+
+      drawArrowOn(planCtx, yPoint.x, odLineYAtX + 4, yPoint.x, odLineYAtX + 46, "#bb2f2a", 4);
+      drawRedTarget(planCtx, yPoint.x, odLineYAtX);
+      planCtx.fillStyle = "#bb2f2a";
+      planCtx.fillText("Y", yPoint.x - 13, odLineYAtX + 82);
+
+      [
+        { p: a, text: "a", color: "#2c5fb8", dx: 12, dy: 8 },
+        { p: b, text: "b", color: "#2c5fb8", dx: -42, dy: 16 },
+        { p: c, text: "c", color: "#2c5fb8", dx: -10, dy: -18 },
+      ].forEach(item => {
+        planCtx.fillStyle = item.color;
+        planCtx.beginPath();
+        planCtx.arc(item.p.x, item.p.y, 7, 0, Math.PI * 2);
+        planCtx.fill();
+        planCtx.font = "700 34px Microsoft JhengHei, Arial";
+        planCtx.fillText(item.text, item.p.x + item.dx, item.p.y + item.dy);
+      });
+    }
+
+    function classify(idValue) {
+      const eps = 1e-9;
+      if (idValue > eps) return { title: "判斷：凸面", detail: "ID > 0，X 高於 A-C 直線" };
+      if (idValue < -eps) return { title: "判斷：凹面", detail: "ID < 0，X 低於 A-C 直線" };
+      return { title: "判斷：接近斜平面", detail: "ID = 0，X 落在 A-C 直線上" };
+    }
+
+    function draw() {
+      document.getElementById("toolPathToggleButton").classList.toggle("is-on", showToolPath);
+      const R = numberOf(inputs.outerR);
+      const r = numberOf(inputs.innerR);
+      const od = numberOf(inputs.od);
+      const id = numberOf(inputs.id);
+      const toolZero = numberOf(inputs.toolZero);
+      const toolZ1 = numberOf(inputs.toolZ1);
+      const toolZ2 = numberOf(inputs.toolZ2);
+      const toolZ3 = numberOf(inputs.toolZ3);
+      const thickness = Math.abs(numberOf(inputs.thickness));
+      const zScale = numberOf(inputs.zScale);
+      zScaleValue.textContent = String(zScale);
+      status.textContent = "";
+
+      if (![R, r, od, id, toolZero, toolZ1, toolZ2, toolZ3, thickness, zScale].every(Number.isFinite)) {
+        status.textContent = "請輸入有效數字";
+        return;
+      }
+
+      if (R <= r || r < 0 || R <= 0) {
+        status.textContent = "R 必須大於 r，且半徑需大於等於 0";
+        return;
+      }
+
+      const za = 0;
+      const zc = od;
+      const mid = (R + r) / 2;
+      const zx = (za + zc) / 2 + id;
+      const toolZc = toolZero - toolZ1;
+      const toolZx = toolZero - toolZ2;
+      const toolZa = toolZero - toolZ3;
+      const bottomZ = Math.min(za, zc, zx, toolZc, toolZx, toolZa) - thickness;
+      const profile = makeProfile({ r, R, za, zc, zx });
+      const toolPath = makeProfile({ r, R, za: toolZa, zc: toolZc, zx: toolZx });
+      const result = classify(id);
+      drawPlanDiagram(R, r, od, id);
+
+      const W = canvas.width;
+      const H = canvas.height;
+      const left = 85;
+      const right = W - 60;
+      const top = 88;
+      const bottom = H - 192;
+      const axisY = 430;
+      const sx = value => left + (value / R) * (right - left);
+      const sy = value => axisY - value * zScale;
+
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#fbfcfd";
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.strokeStyle = "#b8c0ca";
+      ctx.lineWidth = 2;
+      roundRect(18, 18, W - 36, H - 36, 8);
+      ctx.stroke();
+
+      ctx.font = "18px Microsoft JhengHei, Arial";
+      ctx.fillStyle = "#5f6670";
+      ctx.fillText(`R=${fmt(R, 3)}, r=${fmt(r, 3)}, OD=${fmt(od, 4)}, ID=${fmt(id, 4)}  =>  Za=0, Zx=${fmt(zx, 4)}, Zc=${fmt(zc, 4)}`, 36, 62);
+
+      ctx.strokeStyle = "#2c5fb8";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(sx(0), top);
+      ctx.lineTo(sx(0), bottom);
+      ctx.stroke();
+      ctx.fillStyle = "#2c5fb8";
+      ctx.font = "700 24px Microsoft JhengHei, Arial";
+      ctx.fillText("圓心 / 旋轉中心", sx(0) + 12, top + 30);
+      ctx.font = "18px Microsoft JhengHei, Arial";
+      ctx.fillText("0", sx(0) - 10, bottom + 30);
+
+      const markerData = [
+        { x: r, text: `r=${fmt(r, 3)} 起刀邊 C`, color: "#2c5fb8" },
+        { x: mid, text: `R=${fmt(mid, 3)} / X`, color: "#20242a" },
+        { x: R, text: `R=${fmt(R, 3)} 外徑邊 A`, color: "#bb2f2a" },
+      ];
+      markerData.forEach(item => {
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(sx(item.x), top + 35);
+        ctx.lineTo(sx(item.x), bottom);
+        ctx.stroke();
+        ctx.fillStyle = item.color;
+        ctx.font = "18px Microsoft JhengHei, Arial";
+        ctx.fillText(item.text, sx(item.x) - 70, bottom + 30);
+      });
+
+      ctx.fillStyle = "#eef1f4";
+      ctx.strokeStyle = "#b8c0ca";
+      ctx.lineWidth = 2;
+      ctx.fillRect(sx(0), sy(Math.max(0.12, zc + 0.06)), sx(r) - sx(0), sy(bottomZ) - sy(Math.max(0.12, zc + 0.06)));
+      ctx.strokeRect(sx(0), sy(Math.max(0.12, zc + 0.06)), sx(r) - sx(0), sy(bottomZ) - sy(Math.max(0.12, zc + 0.06)));
+      ctx.fillStyle = "#5f6670";
+      ctx.font = "18px Microsoft JhengHei, Arial";
+      ctx.fillText("中空區", sx(0) + 35, sy(bottomZ) - 10);
+
+      const pts = [];
+      for (let i = 0; i <= 320; i++) {
+        const x = r + (R - r) * i / 320;
+        pts.push({ x, z: profile.zAt(x) });
+      }
+
+      ctx.beginPath();
+      ctx.moveTo(sx(pts[0].x), sy(pts[0].z));
+      pts.forEach(p => ctx.lineTo(sx(p.x), sy(p.z)));
+      ctx.lineTo(sx(R), sy(bottomZ));
+      ctx.lineTo(sx(r), sy(bottomZ));
+      ctx.closePath();
+      ctx.fillStyle = "#df9a63";
+      ctx.fill();
+
+      ctx.strokeStyle = "#c6332d";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(sx(pts[0].x), sy(pts[0].z));
+      pts.forEach(p => ctx.lineTo(sx(p.x), sy(p.z)));
+      ctx.stroke();
+
+      ctx.strokeStyle = "#c6332d";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sx(r), sy(zc));
+      ctx.lineTo(sx(R), sy(za));
+      ctx.stroke();
+
+      const toolPts = [];
+      for (let i = 0; i <= 320; i++) {
+        const x = r + (R - r) * i / 320;
+        toolPts.push({ x, z: toolPath.zAt(x) });
+      }
+      if (showToolPath) {
+        ctx.strokeStyle = "#179160";
+        ctx.lineWidth = 4;
+        ctx.setLineDash([16, 10]);
+        ctx.beginPath();
+        ctx.moveTo(sx(toolPts[0].x), sy(toolPts[0].z));
+        toolPts.forEach(p => ctx.lineTo(sx(p.x), sy(p.z)));
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      drawDashedLine(sx(0), sy(0), sx(R), sy(0), "#4a709b", 3);
+      ctx.fillStyle = "#4a709b";
+      ctx.font = "700 26px Microsoft JhengHei, Arial";
+      ctx.fillText("Z0", sx(0) - 56, sy(0) + 28);
+
+      const points = [
+        { text: `C / Zc=${fmt(zc, 4)}`, x: r, z: zc, color: "#2c5fb8", dx: -18, dy: zc >= 0 ? -104 : -126 },
+        { text: `X / Zx=${fmt(zx, 4)}`, x: mid, z: zx, color: "#20242a", dx: 38, dy: -112 },
+        { text: "A / Za=0  Z0基準點", x: R, z: za, color: "#bb2f2a", dx: -260, dy: -112, right: false },
+      ];
+
+      points.forEach(p => {
+        const px = sx(p.x);
+        const py = sy(p.z);
+        ctx.fillStyle = p.color;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(px, py, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        const box = labelBox(p.text, px + p.dx, py + p.dy, p.color, p.right ? "right" : "left");
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(box.x + 12, box.y + box.h);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+      });
+
+      if (showToolPath) {
+        const toolPoints = [
+          { text: `刀Z1=${fmt(toolZ1, 4)}`, x: r, z: toolZc, dx: -8, dy: 62 },
+          { text: `刀Z2=${fmt(toolZ2, 4)}`, x: mid, z: toolZx, dx: 42, dy: 56 },
+          { text: `刀Z3=${fmt(toolZ3, 4)}`, x: R, z: toolZa, dx: -152, dy: 62 },
+        ];
+        toolPoints.forEach(p => {
+          const px = sx(p.x);
+          const py = sy(p.z);
+          ctx.fillStyle = "#179160";
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(px, py, 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          labelBox(p.text, px + p.dx, py + p.dy, "#179160");
+        });
+      }
+
+      if (toolAnimationProgress !== null) {
+        const animationT = Math.max(0, Math.min(1, toolAnimationProgress));
+        const toolX = r + (R - r) * animationT;
+        const toolZ = toolPath.zAt(toolX);
+        drawUprightCutter(sx(toolX), sy(toolZ));
+      }
+
+      ctx.strokeStyle = "#5f6670";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx(r), bottom - 8);
+      ctx.lineTo(sx(R), bottom - 8);
+      ctx.moveTo(sx(r), bottom - 20);
+      ctx.lineTo(sx(r), bottom + 4);
+      ctx.moveTo(sx(R), bottom - 20);
+      ctx.lineTo(sx(R), bottom + 4);
+      ctx.stroke();
+      ctx.fillStyle = "#5f6670";
+      ctx.font = "700 28px Microsoft JhengHei, Arial";
+      ctx.fillText(`AC = ${fmt(R - r, 3)}mm`, (sx(r) + sx(R)) / 2 - 78, bottom - 20);
+
+      ctx.fillStyle = "#764aa1";
+      ctx.font = "20px Microsoft JhengHei, Arial";
+      if (profile.center) {
+        const arcText = `弧面圓心 O：R=${fmt(profile.center.x, 3)}, Z=${fmt(profile.center.z, 3)}mm`;
+        ctx.fillText(Math.abs(profile.center.z) > 1000 ? `${arcText}（圖外）` : arcText, 585, top - 30);
+      } else {
+        ctx.fillText("弧面圓心 O：ID=0，等於無明顯弧度（圓心在無限遠）", 585, top - 30);
+      }
+
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#c7cfd8";
+      ctx.lineWidth = 2;
+      roundRect(18, H - 84, W - 36, 58, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#bb2f2a";
+      ctx.font = "700 24px Microsoft JhengHei, Arial";
+      ctx.fillText(result.title, 40, H - 48);
+      ctx.fillStyle = "#5f6670";
+      ctx.font = "19px Microsoft JhengHei, Arial";
+      ctx.fillText(result.detail, 260, H - 48);
+
+      readout.innerHTML = [
+        `Za = 0`,
+        `Zc = OD = ${fmt(zc, 4)}`,
+        `Zx = (Za + Zc) / 2 + ID = ${fmt(zx, 4)}`,
+        `X 位置 = (R + r) / 2 = ${fmt(mid, 3)}mm`,
+        `AC = R - r = ${fmt(R - r, 3)}mm`,
+        `刀具路徑：車刀Z0=${fmt(toolZero, 4)}，Z1=${fmt(toolZ1, 4)}, Z2=${fmt(toolZ2, 4)}, Z3=${fmt(toolZ3, 4)}（正值往下）`,
+      ].join("<br>");
+    }
+
+    function stopToolAnimation(clearProgress = true) {
+      if (toolAnimationFrame !== null) {
+        cancelAnimationFrame(toolAnimationFrame);
+        toolAnimationFrame = null;
+      }
+      toolAnimationStart = null;
+      if (clearProgress) toolAnimationProgress = null;
+    }
+
+    function startToolAnimation() {
+      stopToolAnimation(false);
+      showToolPath = true;
+      toolAnimationProgress = 0;
+      const duration = 3600;
+
+      function step(timestamp) {
+        if (toolAnimationStart === null) toolAnimationStart = timestamp;
+        const elapsed = timestamp - toolAnimationStart;
+        toolAnimationProgress = Math.min(1, elapsed / duration);
+        draw();
+
+        if (toolAnimationProgress < 1) {
+          toolAnimationFrame = requestAnimationFrame(step);
+        } else {
+          toolAnimationFrame = null;
+          toolAnimationStart = null;
+        }
+      }
+
+      toolAnimationFrame = requestAnimationFrame(step);
+    }
+
+    document.getElementById("toolPathToggleButton").addEventListener("click", () => {
+      showToolPath = !showToolPath;
+      draw();
+    });
+    document.getElementById("drawButton").addEventListener("click", () => {
+      stopToolAnimation();
+      draw();
+    });
+    document.getElementById("animateToolButton").addEventListener("click", startToolAnimation);
+    document.getElementById("calcToolButton").addEventListener("click", openToolCalcModal);
+    document.getElementById("calcExitButton").addEventListener("click", closeToolCalcModal);
+    document.getElementById("calcRunButton").addEventListener("click", () => {
+      try {
+        lastToolCalc = computeToolZValues();
+        showToolCalcResult(lastToolCalc);
+      } catch (error) {
+        lastToolCalc = null;
+        calcResult.textContent = error.message;
+      }
+    });
+    document.getElementById("calcApplyButton").addEventListener("click", () => {
+      try {
+        if (!lastToolCalc) {
+          lastToolCalc = computeToolZValues();
+          showToolCalcResult(lastToolCalc);
+        }
+        setInputValue(inputs.toolZ1, lastToolCalc.z1);
+        setInputValue(inputs.toolZ2, lastToolCalc.z2);
+        setInputValue(inputs.toolZ3, lastToolCalc.z3);
+        stopToolAnimation();
+        draw();
+        closeToolCalcModal();
+      } catch (error) {
+        lastToolCalc = null;
+        calcResult.textContent = error.message;
+      }
+    });
+    toolCalcModal.addEventListener("click", event => {
+      if (event.target === toolCalcModal) closeToolCalcModal();
+    });
+    Object.values(inputs).forEach(input => input.addEventListener("input", () => {
+      stopToolAnimation();
+      draw();
+    }));
+    draw();
+  </script>
+</body>
+</html>
