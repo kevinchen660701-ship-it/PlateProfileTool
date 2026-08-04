@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FSG2300 Log Analysis</title>
+  <meta name="description" content="FSG-2300 晶圓研磨機台批次 Log 自動分析工具專案介紹。">
+  <link rel="icon" href="data:image/x-icon;base64,AAABAAIAICAAAAEAIABeAwAAJgAAABAQAAABACAAygEAAIQDAACJUE5HDQoaCgAAAA1JSERSAAAAIAAAACAIBgAAAHN6evQAAAABc1JHQgCuzhzpAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAvNJREFUWEfFV01oE0EUztGjRw/ZbC+CBw8iojGzYVuQ0oNgb3qypdTSoKiQkp34Q4oHf8DSY4tIa0ERhBIFpSqVCIJRoRZLoUgWglYQRJB6MKLIyDebGbKT3exuXeyDLyEvM+/75s28+UkkNmG6aXXpxOp2wbS61HaxWtKgfSnDmtII/ZwyKPOCRui3lEFnk0bhmG6WtqkxNmUYnWbQZZUsCBCqZa1BNV5o083S9hSxFtTAUQHxkadHP1jcpRm0rgaLir7hG+xNZYTNz1/6defp+q1qjXWrXG3GyZ25bAsYFY8enGfM3sv+2Gn2rlZncwsfbqt8LkPaw4z86pWjbHdvvs3filP5QU4O1OzH7JXN2NjEswYGqPJKSxm0ogZqBVL6cvEkD/p91WQXLl9sawMcGcixn2v7eLtP9jQnB/LXF7Em6p4VkjSK/WogFffLJTkqgXtzh13ZyPSfYRsrB/h/mH9BLgSgjUYsqvIngkrtxOkhV0o/1mbY7/f7+e8vS2l2PDfMhdgvstxXfXiIWZNO6j0ENHRzbIckDxq9X0qvTd9lb5/0SGEQgm+IgBgQegloihiXArB7qaQCSKkIvPx8yDPgzM2czAbWxkB+gvs7CjBolZNjQfiVXdiU4htltmGPsFV7xeX3ai/Ap0HPnNujEgM7ewqsUu7l5OuvSceURvUL4HxpHjJucpQbGqPkfqyRwJRG9QvwswIfqoDWjkv218CAUf1SABailqGjnQSECRjV7xLgVYJ+HePySwEZOprQSSG9VQIweOcAIlZjKwSgAp2NSLl4+HWMyw/gUJI7oboQ/TrG5XdgTUkB2JFad0O/jnH5AZl+mQVCz/43AYSWXeSw5pnAr9x+HePwO0exzyUVJYkGYisWwG8EjMOPN4PK6zI0EFMRNzxvQl6G80HdG/4VocmFOdPhfU+IAgwkMO1+hvJMGcVJNWhoEFrueA0Pa1i1/GEa4s3QrKRZvCnVOLEYfzk5a2Tchaw1iGlT2wfZXwGscfjjv/zXAAAAAElFTkSuQmCCiVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAFfSURBVDhPY2DAAeTt6wXkrcsdwNi+RAJdHieQtS1PkLWpuC9nU/EfGctaVzyXtS6vQFcPByAb5azLt6NrRMbBOZP/n9iX+3nmhpsR6PoZkDWDFJ4/kPS/oK4ZrlnHrfj/nROh/y/dufG/evKh5/L29RxwzbJWFRnoCm/f2fH/wemA/1MnBv839i76f3yLy//e2Yv+n7jz/39xzx6Q2naEAdYV72Ga0RXOm5P5/9MV+/9ZVW1gPpIB/0HeZpC3L1cAcTxSZv2/fDgWQyEuNtgA63IHBhmbygAQB5dCXGyQHlnrigJwtJFvQHkFg7xVlQG5BoBcDw3E8u+4FOJiQwIRmkLlbMqn41KIiw1KN/BoBCUK38y5D0ESoNgAYXxsr7S5bzHyBygsQOkdlqBwYVCakbGp8EDRDAPg/GBTMR9dExxbl2/HsBkbACUuUAjLWpc3gLCMTVmEvGWlBro6EAAAF/LMdLoiFgoAAAAASUVORK5CYII=">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1f2933;
+      --muted: #5f6c7b;
+      --line: #d8dee7;
+      --panel: #ffffff;
+      --page: #f5f7fa;
+      --blue: #0b66c3;
+      --green: #16805f;
+      --red: #b83b3b;
+      --amber: #d39a2d;
+      --violet: #6f4aa1;
+      --teal: #167f91;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+      font-family: "Microsoft JhengHei", "PingFang TC", "Segoe UI", Arial, sans-serif;
+      line-height: 1.6;
+    }
+
+    a { color: var(--blue); }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+    }
+
+    .nav {
+      width: min(1180px, calc(100vw - 32px));
+      height: 58px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .brand img {
+      width: 28px;
+      height: 28px;
+    }
+
+    .navlinks {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .navlinks a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .hero {
+      width: min(1180px, calc(100vw - 32px));
+      min-height: calc(100vh - 58px);
+      margin: 0 auto;
+      padding: 44px 0 34px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(420px, 1.05fr);
+      gap: 34px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--teal);
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 680px;
+      margin: 22px 0 0;
+      color: #344253;
+      font-size: 20px;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 26px 0 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: #354253;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 9px 16px;
+      border-radius: 7px;
+      border: 1px solid #0b66c3;
+      background: var(--blue);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .button.secondary {
+      background: #fff;
+      color: var(--blue);
+    }
+
+    .dashboard {
+      border: 1px solid #bac3cf;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 18px 42px rgba(31, 41, 51, 0.14);
+      overflow: hidden;
+    }
+
+    .windowbar {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 0 14px;
+      border-bottom: 1px solid #d6dde7;
+      background: #f0f3f7;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .dot:nth-child(2) { background: var(--amber); }
+    .dot:nth-child(3) { background: var(--green); }
+
+    .app-ui {
+      display: grid;
+      grid-template-columns: 142px 1fr;
+      min-height: 520px;
+    }
+
+    .tabs {
+      border-right: 1px solid #d6dde7;
+      background: #f8fafc;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .tab {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      padding: 6px 9px;
+      border-radius: 6px;
+      color: #536172;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .tab.active {
+      background: #0b66c3;
+      color: #fff;
+    }
+
+    .workspace {
+      padding: 14px;
+      display: grid;
+      gap: 12px;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbutton {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid #cbd4df;
+      border-radius: 6px;
+      background: #fff;
+      color: #314052;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .toolbutton.primary {
+      border-color: #0b66c3;
+      background: #0b66c3;
+      color: #fff;
+    }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .chart {
+      min-height: 178px;
+      border: 1px solid #d6dde7;
+      border-radius: 7px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    .chart h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .sparkline {
+      width: 100%;
+      height: 102px;
+      display: block;
+    }
+
+    .bars {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-columns: 32px 1fr 42px;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #536172;
+    }
+
+    .bar span:nth-child(2) {
+      height: 10px;
+      border-radius: 999px;
+      background: #e8eef5;
+      overflow: hidden;
+    }
+
+    .bar i {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--green);
+    }
+
+    .statusline {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid #d6dde7;
+      border-radius: 7px;
+      padding: 10px;
+      background: #fbfcfe;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    section {
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .section-inner {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 58px 0;
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 32px;
+      line-height: 1.2;
+    }
+
+    .section-lead {
+      max-width: 780px;
+      margin: -4px 0 28px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .feature {
+      min-height: 154px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fbfcfe;
+    }
+
+    .feature h3,
+    .timeline h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .feature p,
+    .timeline p {
+      margin: 0;
+      color: #566475;
+      font-size: 15px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      counter-reset: step;
+    }
+
+    .step {
+      position: relative;
+      min-height: 150px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fbfcfe;
+    }
+
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 900;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .filetree,
+    .tech-list {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+      padding: 16px;
+    }
+
+    .filetree code {
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 14px;
+      color: #263445;
+    }
+
+    .tech-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tech-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid #e4e9ef;
+      padding-bottom: 9px;
+    }
+
+    .tech-list li:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .timeline article {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #fbfcfe;
+    }
+
+    .version {
+      color: var(--blue);
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px 16px;
+      background: #f5f7fa;
+      color: var(--muted);
+      text-align: center;
+      font-size: 14px;
+    }
+
+    @media (max-width: 960px) {
+      .hero,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .feature-grid,
+      .flow,
+      .statusline {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .app-ui {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(3, 1fr);
+        border-right: 0;
+        border-bottom: 1px solid #d6dde7;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .nav {
+        height: auto;
+        padding: 10px 0;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .navlinks {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .hero {
+        padding-top: 28px;
+      }
+
+      h1 {
+        font-size: 42px;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      .dashboard {
+        width: 100%;
+      }
+
+      .chart-grid,
+      .feature-grid,
+      .flow,
+      .statusline,
+      .timeline article {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="nav" aria-label="主要導覽">
+      <div class="brand">
+        <img alt="" src="data:image/x-icon;base64,AAABAAIAICAAAAEAIABeAwAAJgAAABAQAAABACAAygEAAIQDAACJUE5HDQoaCgAAAA1JSERSAAAAIAAAACAIBgAAAHN6evQAAAABc1JHQgCuzhzpAAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAOwwAADsMBx2+oZAAAAvNJREFUWEfFV01oE0EUztGjRw/ZbC+CBw8iojGzYVuQ0oNgb3qypdTSoKiQkp34Q4oHf8DSY4tIa0ERhBIFpSqVCIJRoRZLoUgWglYQRJB6MKLIyDebGbKT3exuXeyDLyEvM+/75s28+UkkNmG6aXXpxOp2wbS61HaxWtKgfSnDmtII/ZwyKPOCRui3lEFnk0bhmG6WtqkxNmUYnWbQZZUsCBCqZa1BNV5o083S9hSxFtTAUQHxkadHP1jcpRm0rgaLir7hG+xNZYTNz1/6defp+q1qjXWrXG3GyZ25bAsYFY8enGfM3sv+2Gn2rlZncwsfbqt8LkPaw4z86pWjbHdvvs3filP5QU4O1OzH7JXN2NjEswYGqPJKSxm0ogZqBVL6cvEkD/p91WQXLl9sawMcGcixn2v7eLtP9jQnB/LXF7Em6p4VkjSK/WogFffLJTkqgXtzh13ZyPSfYRsrB/h/mH9BLgSgjUYsqvIngkrtxOkhV0o/1mbY7/f7+e8vS2l2PDfMhdgvstxXfXiIWZNO6j0ENHRzbIckDxq9X0qvTd9lb5/0SGEQgm+IgBgQegloihiXArB7qaQCSKkIvPx8yDPgzM2czAbWxkB+gvs7CjBolZNjQfiVXdiU4htltmGPsFV7xeX3ai/Ap0HPnNujEgM7ewqsUu7l5OuvSceURvUL4HxpHjJucpQbGqPkfqyRwJRG9QvwswIfqoDWjkv218CAUf1SABailqGjnQSECRjV7xLgVYJ+HePySwEZOprQSSG9VQIweOcAIlZjKwSgAp2NSLl4+HWMyw/gUJI7oboQ/TrG5XdgTUkB2JFad0O/jnH5AZl+mQVCz/43AYSWXeSw5pnAr9x+HePwO0exzyUVJYkGYisWwG8EjMOPN4PK6zI0EFMRNzxvQl6G80HdG/4VocmFOdPhfU+IAgwkMO1+hvJMGcVJNWhoEFrueA0Pa1i1/GEa4s3QrKRZvCnVOLEYfzk5a2Tchaw1iGlT2wfZXwGscfjjv/zXAAAAAElFTkSuQmCCiVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAFfSURBVDhPY2DAAeTt6wXkrcsdwNi+RAJdHieQtS1PkLWpuC9nU/EfGctaVzyXtS6vQFcPByAb5azLt6NrRMbBOZP/n9iX+3nmhpsR6PoZkDWDFJ4/kPS/oK4ZrlnHrfj/nROh/y/dufG/evKh5/L29RxwzbJWFRnoCm/f2fH/wemA/1MnBv839i76f3yLy//e2Yv+n7jz/39xzx6Q2naEAdYV72Ga0RXOm5P5/9MV+/9ZVW1gPpIB/0HeZpC3L1cAcTxSZv2/fDgWQyEuNtgA63IHBhmbygAQB5dCXGyQHlnrigJwtJFvQHkFg7xVlQG5BoBcDw3E8u+4FOJiQwIRmkLlbMqn41KIiw1KN/BoBCUK38y5D0ESoNgAYXxsr7S5bzHyBygsQOkdlqBwYVCakbGp8EDRDAPg/GBTMR9dExxbl2/HsBkbACUuUAjLWpc3gLCMTVmEvGWlBro6EAAAF/LMdLoiFgoAAAAASUVORK5CYII=">
+        <span>FSG2300 Log Analysis</span>
+      </div>
+      <div class="navlinks">
+        <a href="#features">功能</a>
+        <a href="#workflow">流程</a>
+        <a href="#files">輸入檔</a>
+        <a href="#versions">版本</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-label="FSG2300 Log Analysis">
+      <div>
+        <p class="eyebrow">WinForms / C# / .NET Framework 4.5</p>
+        <p class="eyebrow">Source: D:\CodexProjects\FSG2300LogAnalysisPlan\FSG2300LogAnalysis</p>
+        <h1>FSG2300<br>Log Analysis</h1>
+        <p class="lead">
+          FSG-2300 晶圓研磨機台批次 Log 自動分析工具。讀取 ProcessLog、WaferBatchLog 與單片 W*.csv / W*.ini，
+          將移除量、厚度、負載、磨耗與加工時間整理成可判讀圖表，並可輸出 PowerPoint 分析報告。
+        </p>
+        <div class="meta-row" aria-label="專案重點">
+          <span class="pill">G1 / G2 研磨分析</span>
+          <span class="pill">CSV / INI 雙格式</span>
+          <span class="pill">三語系介面</span>
+          <span class="pill">PPT 自動產出</span>
+          <span class="pill">AI 優化建議</span>
+        </div>
+        <div class="hero-actions">
+          <a class="button" href="#features">查看功能</a>
+          <a class="button secondary" href="#workflow">操作流程</a>
+        </div>
+      </div>
+
+      <div class="dashboard" aria-label="分析介面預覽">
+        <div class="windowbar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        </div>
+        <div class="app-ui">
+          <div class="tabs">
+            <div class="tab active">移除量</div>
+            <div class="tab">負載狀況</div>
+            <div class="tab">負載分布</div>
+            <div class="tab">加工時間</div>
+            <div class="tab">平均磨耗</div>
+            <div class="tab">單片分析</div>
+            <div class="tab">優化建議</div>
+          </div>
+          <div class="workspace">
+            <div class="toolbar">
+              <span class="toolbutton primary">批次分析</span>
+              <span class="toolbutton">單片 Wafer</span>
+              <span class="toolbutton">產出 PPT</span>
+              <span class="toolbutton">繁中</span>
+              <span class="toolbutton">EN</span>
+            </div>
+            <div class="chart-grid">
+              <article class="chart">
+                <h3>G1/G2 移除量（OK 片）</h3>
+                <canvas class="sparkline" width="360" height="116" data-lines="removal"></canvas>
+              </article>
+              <article class="chart">
+                <h3>S1 Peak Loading</h3>
+                <div class="bars">
+                  <div class="bar"><span>C1</span><span><i style="width:74%"></i></span><b>74%</b></div>
+                  <div class="bar"><span>C2</span><span><i style="width:67%;background:var(--teal)"></i></span><b>67%</b></div>
+                  <div class="bar"><span>C3</span><span><i style="width:82%;background:var(--amber)"></i></span><b>82%</b></div>
+                </div>
+              </article>
+              <article class="chart">
+                <h3>加工 / 等待時間</h3>
+                <canvas class="sparkline" width="360" height="116" data-lines="time"></canvas>
+              </article>
+              <article class="chart">
+                <h3>G2 成品厚度（OK 片）</h3>
+                <canvas class="sparkline" width="360" height="116" data-lines="thickness"></canvas>
+              </article>
+            </div>
+            <div class="statusline">
+              <div class="metric"><strong>18</strong><span>PPT 報告頁面</span></div>
+              <div class="metric"><strong>3</strong><span>Chuck 分群</span></div>
+              <div class="metric"><strong>20</strong><span>最近片數放大</span></div>
+              <div class="metric"><strong>3</strong><span>UI 語言</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="section-inner">
+        <h2>分析範圍</h2>
+        <p class="section-lead">
+          工具把批次摘要、單片時序、加工條件與報告輸出集中在同一個桌面介面，方便工程人員快速定位異常來源。
+        </p>
+        <div class="feature-grid">
+          <article class="feature">
+            <h3>加工參數</h3>
+            <p>解析 G1/G2 砂輪、轉速、工件轉速、進給速率、Air cut、Spark out 與目標厚度。</p>
+          </article>
+          <article class="feature">
+            <h3>移除量與厚度</h3>
+            <p>呈現 G1/G2 移除量、抬針後移除量，以及 G1 研磨後 / G2 成品厚度趨勢與統計。</p>
+          </article>
+          <article class="feature">
+            <h3>負載狀況</h3>
+            <p>依 Chuck1/2/3 分群顯示 S1 Peak Loading，支援總覽、箱線圖、時序串聯與並聯檢視。</p>
+          </article>
+          <article class="feature">
+            <h3>加工時間</h3>
+            <p>統計 G1/G2 加工秒數與片間等待時間，用於檢查節拍、瓶頸與 UPH 表現。</p>
+          </article>
+          <article class="feature">
+            <h3>磨耗率</h3>
+            <p>計算 G1/G2 平均砂輪磨耗率，並提供全批次與最近 20 片放大觀察。</p>
+          </article>
+          <article class="feature">
+            <h3>AI 優化建議</h3>
+            <p>支援 Google Gemini、Anthropic Claude 與 OpenRouter，依分析摘要產生製程改善建議。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="workflow">
+      <div class="section-inner">
+        <h2>操作流程</h2>
+        <div class="flow">
+          <article class="step">
+            <h3>選取批次資料夾</h3>
+            <p>點選「批次分析」，選取包含 ProcessLog.csv 或 ProcessLog.ini 的批次資料夾。</p>
+          </article>
+          <article class="step">
+            <h3>自動載入圖表</h3>
+            <p>系統解析批次資訊、各片結果與必要的 W*.csv / W*.ini 單片時序資料。</p>
+          </article>
+          <article class="step">
+            <h3>互動篩選判讀</h3>
+            <p>依 Chuck、G1/G2、片號、最近片數與平滑化設定切換視圖，檢查異常趨勢。</p>
+          </article>
+          <article class="step">
+            <h3>輸出報告</h3>
+            <p>一鍵產出 PowerPoint，包含加工參數、圖表、統計摘要與 AI 建議頁。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="files">
+      <div class="section-inner">
+        <h2>輸入檔與技術</h2>
+        <div class="split">
+          <div>
+            <p class="section-lead">
+              批次分析以 ProcessLog 與 WaferBatchLog 為基礎；單片時序則按需讀取 W0001、W0002 等檔案。
+            </p>
+            <pre class="filetree"><code>批次資料夾/
+├── ProcessLog.csv / ProcessLog.ini
+├── WaferBatchLog.csv
+└── W0001.csv / W0001.ini
+    W0002.csv / W0002.ini
+    ...</code></pre>
+          </div>
+          <ul class="tech-list" aria-label="技術規格">
+            <li><span>IDE</span><strong>Visual Studio 2013</strong></li>
+            <li><span>語言</span><strong>C# 5.0</strong></li>
+            <li><span>框架</span><strong>.NET Framework 4.5</strong></li>
+            <li><span>平台目標</span><strong>x86</strong></li>
+            <li><span>圖表套件</span><strong>Windows Forms DataVisualization</strong></li>
+            <li><span>報告輸出</span><strong>System.IO.Packaging / .pptx</strong></li>
+            <li><span>語言設定</span><strong>繁中 / 簡中 / English</strong></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="versions">
+      <div class="section-inner">
+        <h2>版本重點</h2>
+        <div class="timeline">
+          <article>
+            <div class="version">v1.7.2</div>
+            <div>
+              <h3>報告與嵌入模式修正</h3>
+              <p>PPT 檔名改以 ProcessLog 時間命名，並支援嵌入 FSG2300 主程式時的精簡操作模式。</p>
+            </div>
+          </article>
+          <article>
+            <div class="version">v1.7.0</div>
+            <div>
+              <h3>多供應商 AI 建議</h3>
+              <p>新增 Google Gemini、Anthropic Claude、OpenRouter，PPT 可附加 Markdown 排版的 AI 建議頁。</p>
+            </div>
+          </article>
+          <article>
+            <div class="version">v1.5.0</div>
+            <div>
+              <h3>時序與磨耗改善</h3>
+              <p>修正 RelativeSec 累積問題，改善負載時序時間軸，並重整平均磨耗率頁面。</p>
+            </div>
+          </article>
+          <article>
+            <div class="version">v1.2.0</div>
+            <div>
+              <h3>INI 直接讀取</h3>
+              <p>加入 IniReader、ProcessLogIniParser、BatchIniParser 與 WaferIniParser，CSV 不再是唯一來源。</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    FSG2300 Log Analysis project page. Updated 2026-08-04.
+  </footer>
+
+  <script>
+    function drawLineChart(canvas, mode) {
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      const pad = 18;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = "#d7dee8";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i += 1) {
+        const y = pad + i * ((h - pad * 2) / 3);
+        ctx.beginPath();
+        ctx.moveTo(pad, y);
+        ctx.lineTo(w - pad, y);
+        ctx.stroke();
+      }
+      const series = mode === "time"
+        ? [[32, 34, 31, 37, 36, 33, 35, 39, 34, 32], [18, 16, 19, 17, 20, 18, 15, 17, 16, 18]]
+        : mode === "thickness"
+          ? [[782, 781.8, 782.1, 781.9, 782.2, 782.0, 781.7, 782.1, 781.9, 782.0]]
+          : [[42, 43, 41, 44, 43, 45, 42, 41, 44, 43], [38, 39, 37, 40, 39, 41, 38, 37, 39, 40]];
+      const colors = ["#0b66c3", "#16805f", "#d39a2d"];
+      const all = series.flat();
+      const min = Math.min(...all);
+      const max = Math.max(...all);
+      const span = max - min || 1;
+      series.forEach((values, index) => {
+        ctx.strokeStyle = colors[index];
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        values.forEach((value, i) => {
+          const x = pad + i * ((w - pad * 2) / (values.length - 1));
+          const y = h - pad - ((value - min) / span) * (h - pad * 2);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      });
+    }
+
+    document.querySelectorAll(".sparkline").forEach(canvas => {
+      drawLineChart(canvas, canvas.dataset.lines);
+    });
+  </script>
+</body>
+</html>
