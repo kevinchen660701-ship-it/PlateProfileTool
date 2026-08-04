@@ -3,397 +3,384 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>FSG2300 Log Analysis Web</title>
+  <title>FSG2300 Log Analysis</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --line: #d7dee7;
-      --ink: #202936;
-      --muted: #637184;
-      --blue: #0b66c3;
-      --green: #16805f;
-      --red: #b54040;
-      --amber: #c78b24;
-      --teal: #147c91;
-      --violet: #6f4aa1;
+      --top: #f5f7fa;
+      --info: #dce6f5;
+      --tab: #ebebeb;
+      --line: #b9c4d1;
+      --grid: #e5eaf0;
+      --text: #20242a;
+      --muted: #505a66;
+      --blue: #0072c6;
+      --g1: #0072bd;
+      --g2: #2fa84f;
+      --c3: #d95319;
+      --purple: #503c8c;
+      --orange: #b45014;
+      --bg: #ffffff;
     }
-
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       margin: 0;
+      color: var(--text);
       background: var(--bg);
-      color: var(--ink);
-      font-family: "Microsoft JhengHei", "PingFang TC", "Segoe UI", Arial, sans-serif;
-      line-height: 1.5;
+      font-family: "Microsoft JhengHei UI", "Microsoft JhengHei", "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
     }
-
-    button, input, select { font: inherit; }
-    button {
-      min-height: 36px;
-      border: 1px solid #c6d0dc;
-      border-radius: 6px;
-      background: #fff;
-      color: var(--ink);
+    button, input, select, textarea { font: inherit; }
+    .app { height: 100vh; display: grid; grid-template-rows: 58px 24px minmax(0, 1fr); }
+    .topbar {
+      position: relative;
+      height: 58px;
+      padding: 8px 6px 4px;
+      background: var(--top);
+      border-bottom: 1px solid #d5dde7;
+      overflow: hidden;
+    }
+    .mainbtn {
+      position: absolute;
+      top: 8px;
+      width: 138px;
+      height: 42px;
+      border: 0;
+      border-radius: 5px;
+      color: #fff;
+      font-weight: 800;
       cursor: pointer;
+      box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18);
+    }
+    #btnBatch { left: 6px; background: #0066cc; }
+    #btnWafer { left: 151px; background: #008c46; }
+    #btnPPT { left: 300px; background: #b45014; }
+    #btnPPT:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; }
+    .langbtn {
+      position: absolute;
+      top: 14px;
+      width: 58px;
+      height: 26px;
+      border: 1px solid #a8b4c2;
+      border-radius: 3px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
       font-weight: 700;
     }
-    button.primary { border-color: var(--blue); background: var(--blue); color: #fff; }
-    button.good { border-color: var(--green); background: var(--green); color: #fff; }
-    button:disabled { opacity: .48; cursor: not-allowed; }
-
-    header {
-      height: 56px;
+    .langbtn.active { background: #0072c6; border-color: #0072c6; color: #fff; }
+    #btnLangZhTW { left: 444px; }
+    #btnLangZhCN { left: 506px; }
+    #btnLangEn { left: 568px; }
+    #btnAbout {
+      position: absolute;
+      left: 630px;
+      top: 14px;
+      width: 28px;
+      height: 26px;
+      border: 1px solid #788caa;
+      border-radius: 3px;
+      background: #c8d2e1;
+      color: #323250;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    #lblPath {
+      position: absolute;
+      left: 662px;
+      right: 104px;
+      top: 14px;
+      height: 30px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--line);
-      background: #fff;
-      position: sticky;
-      top: 0;
-      z-index: 10;
+      color: #505050;
+      font: 13px Consolas, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .title { font-size: 18px; font-weight: 900; white-space: nowrap; }
-
-    .layout {
-      width: min(1540px, calc(100vw - 20px));
-      margin: 10px auto 18px;
-      display: grid;
-      grid-template-columns: 330px minmax(0, 1fr);
-      gap: 10px;
+    #lblVersion {
+      position: absolute;
+      right: 12px;
+      top: 18px;
+      width: 80px;
+      height: 20px;
+      color: #828ca0;
+      text-align: right;
+      font: 12px Consolas, monospace;
     }
-
-    aside, main {
-      min-height: calc(100vh - 84px);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel);
-    }
-    aside {
-      padding: 14px;
-      display: grid;
-      gap: 12px;
-      align-content: start;
-      position: sticky;
-      top: 66px;
-      max-height: calc(100vh - 84px);
-      overflow: auto;
-    }
-    main { overflow: hidden; }
-
-    .block {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fbfcfe;
-      padding: 12px;
-    }
-    .block h2, .block h3 {
-      margin: 0 0 8px;
-      font-size: 15px;
-      line-height: 1.25;
-    }
-    .hint { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
-    .filepick {
-      width: 100%;
-      padding: 9px;
-      border: 1px dashed #aeb9c7;
-      border-radius: 7px;
-      background: #fff;
-    }
-    .row { display: flex; gap: 8px; align-items: center; }
-    .row > * { flex: 1; }
-    input[type="number"], select {
-      width: 100%;
-      height: 36px;
-      border: 1px solid #c6d0dc;
-      border-radius: 6px;
-      padding: 6px 8px;
-      background: #fff;
-    }
-
-    .metrics {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-    .metric {
-      border: 1px solid #dfe5ec;
-      border-radius: 7px;
-      padding: 8px;
-      background: #fff;
-      min-height: 66px;
-    }
-    .metric strong { display: block; font-size: 22px; line-height: 1.15; }
-    .metric span { color: var(--muted); font-size: 12px; }
-
-    .tabs {
+    .info {
+      height: 24px;
       display: flex;
-      gap: 4px;
-      padding: 8px;
-      border-bottom: 1px solid var(--line);
-      background: #f8fafc;
+      align-items: center;
+      padding-left: 6px;
+      background: var(--info);
+      font: 13px Consolas, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tabs {
+      height: 100%;
+      display: grid;
+      grid-template-rows: 31px minmax(0, 1fr);
+      min-width: 0;
+      background: #fff;
+    }
+    .tabstrip {
+      display: flex;
+      align-items: end;
+      gap: 0;
+      padding: 6px 4px 0;
+      border-bottom: 1px solid #8fa4bd;
+      background: #f4f4f4;
       overflow-x: auto;
+      overflow-y: hidden;
     }
     .tab {
-      flex: 0 0 auto;
-      padding: 7px 10px;
-      border-radius: 6px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: #526174;
-      font-size: 14px;
-      white-space: nowrap;
-    }
-    .tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-
-    .view { display: none; padding: 14px; overflow: auto; height: calc(100vh - 136px); }
-    .view.active { display: block; }
-
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      padding: 12px;
-      min-width: 0;
-    }
-    .panel h2 { margin: 0 0 10px; font-size: 18px; }
-    .panel h3 { margin: 0 0 8px; font-size: 15px; }
-    canvas.chart {
-      width: 100%;
-      height: 300px;
-      display: block;
-      border: 1px solid #dfe5ec;
-      border-radius: 7px;
-      background: #fff;
-    }
-    canvas.tall { height: 420px; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      background: #fff;
-    }
-    th, td {
-      padding: 7px 8px;
-      border-bottom: 1px solid #e5ebf1;
-      text-align: left;
-      white-space: nowrap;
-    }
-    th { color: #445266; background: #f8fafc; position: sticky; top: 0; z-index: 1; }
-    .tablewrap {
-      max-height: 360px;
-      overflow: auto;
-      border: 1px solid #e0e6ed;
-      border-radius: 7px;
-    }
-
-    .status {
-      min-height: 34px;
-      padding: 8px 10px;
-      border-radius: 7px;
-      background: #eef4fb;
-      color: #24415f;
+      width: 95px;
+      height: 24px;
+      flex: 0 0 95px;
+      border: 1px solid #aaa;
+      border-bottom: 0;
+      background: var(--tab);
+      color: #222;
       font-size: 13px;
+      white-space: nowrap;
+      cursor: pointer;
     }
-    .status.err { background: #fff0f0; color: #9b2e2e; }
-    .status.ok { background: #edf8f3; color: #116246; }
-
-    .chips { display: flex; flex-wrap: wrap; gap: 7px; }
-    .chip {
-      display: inline-flex;
+    .tab.active {
+      background: var(--blue);
+      color: #fff;
+      border-color: #0065ad;
+    }
+    .page { display: none; height: 100%; min-height: 0; overflow: hidden; }
+    .page.active { display: block; }
+    .fill { width: 100%; height: 100%; }
+    .split-v { height: 100%; display: grid; grid-template-rows: minmax(0, 1fr) 172px; }
+    .split-half { height: 100%; display: grid; grid-template-rows: 1fr 1fr; }
+    .split-half > * + * { border-top: 1px solid #c8d0da; }
+    .ctrlbar {
+      height: 36px;
+      display: flex;
+      gap: 8px;
       align-items: center;
-      min-height: 28px;
-      padding: 4px 8px;
-      border: 1px solid #d8dee7;
-      border-radius: 6px;
+      padding: 4px 6px;
+      background: #f0f3f8;
+      border-bottom: 1px solid #d3dbe5;
+      overflow-x: auto;
+    }
+    .toggle {
+      height: 26px;
+      min-width: 90px;
+      padding: 0 9px;
+      border: 1px solid currentColor;
+      border-radius: 4px;
       background: #fff;
-      color: #445266;
+      color: var(--g1);
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
+      cursor: pointer;
     }
-    .note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 13px;
+    .toggle input { vertical-align: -2px; }
+    .toggle.c2 { color: var(--g2); }
+    .toggle.c3 { color: var(--c3); }
+    .toggle.purple { color: var(--purple); }
+    .tablewrap { width: 100%; height: 100%; overflow: auto; background: #fff; }
+    table { border-collapse: collapse; width: 100%; font: 14px Consolas, "Microsoft JhengHei", monospace; }
+    th, td { border: 1px solid #d6dce4; padding: 5px 7px; white-space: nowrap; text-align: left; }
+    th { background: #eef2f7; color: #35445a; position: sticky; top: 0; z-index: 2; }
+    .chartbox { width: 100%; height: 100%; position: relative; background: #fff; }
+    canvas.chart { display: block; width: 100%; height: 100%; background: #fff; }
+    .single-layout { height: 100%; display: grid; grid-template-rows: 42px minmax(0, 1fr); }
+    .single-ctrl {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 6px;
+      background: #f0f3f8;
+      border-bottom: 1px solid #d3dbe5;
     }
-    .suggestions {
-      display: grid;
-      gap: 10px;
+    .single-ctrl label { font-size: 14px; }
+    #nudWaferNo { width: 80px; height: 28px; }
+    #btnLoadWafer, #btnOpenSingle {
+      height: 28px;
+      border: 1px solid #aeb9c7;
+      border-radius: 3px;
+      background: #fff;
+      cursor: pointer;
+      padding: 0 12px;
     }
-    .suggestion {
-      border-left: 4px solid var(--blue);
-      border-radius: 7px;
-      background: #fbfcfe;
-      padding: 10px 12px;
+    #txtSingleFile {
+      flex: 1;
+      min-width: 160px;
+      height: 28px;
+      border: 1px solid #aeb9c7;
+      padding: 3px 6px;
+      background: #fff;
     }
-    .suggestion.warn { border-left-color: var(--amber); }
-    .suggestion.bad { border-left-color: var(--red); }
-    .suggestion.good { border-left-color: var(--green); }
-    .suggestion h3 { margin: 0 0 4px; font-size: 15px; }
-    .suggestion p { margin: 0; color: #526174; font-size: 14px; }
-
-    @media (max-width: 980px) {
-      header { height: auto; min-height: 56px; align-items: flex-start; flex-direction: column; gap: 2px; padding: 9px 12px; }
-      .layout { grid-template-columns: 1fr; }
-      aside { position: static; max-height: none; min-height: 0; }
-      main { min-height: 0; }
-      .view { height: auto; }
-      .grid2, .grid3 { grid-template-columns: 1fr; }
+    .subtabs { height: 100%; display: grid; grid-template-rows: 29px minmax(0, 1fr); }
+    .subtabstrip { display: flex; align-items: end; padding: 5px 4px 0; border-bottom: 1px solid #aaa; background: #f4f4f4; }
+    .subtab { width: 95px; height: 24px; border: 1px solid #aaa; border-bottom: 0; background: #ebebeb; cursor: pointer; }
+    .subtab.active { background: #fff; font-weight: 800; }
+    .subpage { display: none; min-height: 0; }
+    .subpage.active { display: block; }
+    .wear { height: 100%; display: grid; grid-template-rows: 28px minmax(0, 1fr); }
+    .wearinfo { display: flex; align-items: center; padding-left: 6px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, monospace; }
+    .ai { height: 100%; display: grid; grid-template-rows: 42px minmax(0, 1fr); }
+    .ai textarea { width: 100%; height: 100%; border: 0; padding: 8px; resize: none; font-family: Consolas, "Microsoft JhengHei", monospace; }
+    .ai input, .ai select { height: 28px; border: 1px solid #aeb9c7; padding: 3px 6px; }
+    .hidden { display: none; }
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .app { min-height: 100vh; height: auto; grid-template-rows: auto 24px minmax(520px, 1fr); }
+      .topbar { height: 110px; }
+      #btnWafer { left: 151px; }
+      #btnPPT { left: 6px; top: 58px; }
+      #btnLangZhTW { left: 151px; top: 66px; }
+      #btnLangZhCN { left: 213px; top: 66px; }
+      #btnLangEn { left: 275px; top: 66px; }
+      #btnAbout { left: 337px; top: 66px; }
+      #lblPath { left: 372px; right: 8px; top: 66px; }
+      #lblVersion { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="title">FSG2300 Log Analysis Web</div>
-  </header>
-
-  <div class="layout">
-    <aside>
-      <section class="block">
-        <h2>載入批次資料</h2>
-        <input id="folderInput" class="filepick" type="file" webkitdirectory directory multiple>
-        <p class="hint">選取含 ProcessLog / WaferBatchLog / W0001... 的資料夾。資料只在瀏覽器本機解析，不會上傳。</p>
-      </section>
-
-      <section class="block">
-        <h2>批次狀態</h2>
-        <div id="status" class="status">尚未載入資料。</div>
-        <div class="metrics" style="margin-top:10px">
-          <div class="metric"><strong id="mWafers">-</strong><span>晶片數</span></div>
-          <div class="metric"><strong id="mUPH">-</strong><span>UPH</span></div>
-          <div class="metric"><strong id="mG1NG">-</strong><span>G1 NG</span></div>
-          <div class="metric"><strong id="mG2NG">-</strong><span>G2 NG</span></div>
-        </div>
-      </section>
-
-      <section class="block">
-        <h2>單片分析</h2>
-        <input id="singleFileInput" class="filepick" type="file" accept=".csv,.ini">
-      </section>
-
-      <section class="block">
-        <h2>輸出</h2>
-        <div class="row">
-          <button id="downloadCsvBtn">摘要 CSV</button>
-          <button id="printBtn">列印</button>
-        </div>
-      </section>
-    </aside>
-
-    <main>
-      <nav class="tabs" aria-label="分析頁籤">
-        <button class="tab active" data-tab="overview">總覽</button>
-        <button class="tab" data-tab="params">加工參數</button>
+  <div class="app">
+    <div class="topbar">
+      <button id="btnBatch" class="mainbtn">📁  批次分析</button>
+      <button id="btnWafer" class="mainbtn">📄  單片 Wafer</button>
+      <button id="btnPPT" class="mainbtn" disabled>📊  產出 PPT</button>
+      <button id="btnLangZhTW" class="langbtn active">繁中</button>
+      <button id="btnLangZhCN" class="langbtn">簡中</button>
+      <button id="btnLangEn" class="langbtn">EN</button>
+      <button id="btnAbout">?</button>
+      <div id="lblPath">尚未載入</div>
+      <div id="lblVersion">v1.7.2</div>
+      <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
+      <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
+    </div>
+    <div id="lblInfo" class="info">—</div>
+    <div class="tabs">
+      <div class="tabstrip" id="tabstrip">
+        <button class="tab active" data-tab="params">加工參數</button>
         <button class="tab" data-tab="removal">移除量</button>
-        <button class="tab" data-tab="loading">負載</button>
+        <button class="tab" data-tab="postlift">抬針後移除量</button>
+        <button class="tab" data-tab="loading">負載狀況</button>
+        <button class="tab" data-tab="loaddist">負載分布</button>
+        <button class="tab" data-tab="loadseq">負載時序串聯</button>
+        <button class="tab" data-tab="loadpar">負載時序並聯</button>
         <button class="tab" data-tab="time">加工時間</button>
-        <button class="tab" data-tab="wear">磨耗</button>
-        <button class="tab" data-tab="thickness">厚度</button>
-        <button class="tab" data-tab="single">單片</button>
-        <button class="tab" data-tab="ai">建議</button>
-      </nav>
+        <button class="tab" data-tab="wear">平均磨耗</button>
+        <button class="tab" data-tab="thickness">成品厚度</button>
+        <button class="tab" data-tab="single">單片分析</button>
+        <button class="tab" data-tab="ai">優化建議</button>
+      </div>
 
-      <section id="overview" class="view active">
-        <div class="grid3">
-          <div class="panel"><h2>批次資訊</h2><div id="infoTable"></div></div>
-          <div class="panel"><h2>OK / NG</h2><canvas id="okChart" class="chart"></canvas></div>
-          <div class="panel"><h2>資料檔</h2><div id="fileSummary" class="chips"></div></div>
-        </div>
-        <div class="panel" style="margin-top:12px">
-          <h2>晶片列表</h2>
-          <div id="recordsTable" class="tablewrap"></div>
-        </div>
-      </section>
-
-      <section id="params" class="view">
-        <div class="panel"><h2>G1 / G2 加工參數</h2><div id="paramsTable"></div></div>
-      </section>
-
-      <section id="removal" class="view">
-        <div class="grid2">
-          <div class="panel"><h2>G1/G2 移除量</h2><canvas id="removalChart" class="chart tall"></canvas></div>
-          <div class="panel"><h2>抬針後移除量</h2><canvas id="postLiftChart" class="chart tall"></canvas></div>
-        </div>
-        <div class="panel" style="margin-top:12px"><h2>統計</h2><div id="removalStats"></div></div>
-      </section>
-
-      <section id="loading" class="view">
-        <div class="grid2">
-          <div class="panel"><h2>S1 Peak Loading</h2><canvas id="loadingChart" class="chart tall"></canvas></div>
-          <div class="panel"><h2>Chuck 分布</h2><canvas id="loadingBoxChart" class="chart tall"></canvas></div>
-        </div>
-      </section>
-
-      <section id="time" class="view">
-        <div class="grid2">
-          <div class="panel"><h2>加工時間</h2><canvas id="timeChart" class="chart tall"></canvas></div>
-          <div class="panel"><h2>片間等待時間</h2><canvas id="waitChart" class="chart tall"></canvas></div>
-        </div>
-      </section>
-
-      <section id="wear" class="view">
-        <div class="grid2">
-          <div class="panel"><h2>G1/G2 平均磨耗率</h2><canvas id="wearChart" class="chart tall"></canvas></div>
-          <div class="panel"><h2>最近 20 片</h2><canvas id="wearRecentChart" class="chart tall"></canvas></div>
-        </div>
-      </section>
-
-      <section id="thickness" class="view">
-        <div class="panel"><h2>G1 研磨後 / G2 成品厚度</h2><canvas id="thicknessChart" class="chart tall"></canvas></div>
-      </section>
-
-      <section id="single" class="view">
-        <div class="panel">
-          <h2>單片時序</h2>
-          <p id="singleMeta" class="note">尚未載入單片資料。</p>
-          <canvas id="singleChart" class="chart tall"></canvas>
-        </div>
-      </section>
-
-      <section id="ai" class="view">
-        <div class="panel">
-          <h2>製程建議</h2>
-          <p class="note">這裡是瀏覽器本機規則式建議，不會呼叫外部 AI API。若要接 Gemini / Claude / OpenRouter，需要另外做金鑰與 CORS 安全設計。</p>
-          <div id="suggestions" class="suggestions" style="margin-top:12px"></div>
-        </div>
-      </section>
-    </main>
+      <main>
+        <section id="params" class="page active"><div class="tablewrap" id="dgvParams"></div></section>
+        <section id="removal" class="page"><div class="split-v"><div class="chartbox"><canvas id="chtRemoval" class="chart"></canvas></div><div class="tablewrap" id="dgvRemovalStats"></div></div></section>
+        <section id="postlift" class="page"><div class="chartbox"><canvas id="chtPostLift" class="chart"></canvas></div></section>
+        <section id="loading" class="page">
+          <div class="ctrlbar">
+            <label class="toggle"><input id="chkLoadChuck1" type="checkbox" checked> Chuck 1</label>
+            <label class="toggle c2"><input id="chkLoadChuck2" type="checkbox" checked> Chuck 2</label>
+            <label class="toggle c3"><input id="chkLoadChuck3" type="checkbox" checked> Chuck 3</label>
+            <label class="toggle purple"><input id="chkLoadOverall" type="checkbox"> G1 / G2 總覽</label>
+          </div>
+          <div class="split-half" style="height:calc(100% - 36px)"><div class="chartbox"><canvas id="chtLoadingG1" class="chart"></canvas></div><div class="chartbox"><canvas id="chtLoadingG2" class="chart"></canvas></div></div>
+        </section>
+        <section id="loaddist" class="page"><div class="chartbox"><canvas id="chtLoadingDist" class="chart"></canvas></div></section>
+        <section id="loadseq" class="page"><div class="split-half"><div class="chartbox"><canvas id="chtLoadingSeqG1" class="chart"></canvas></div><div class="chartbox"><canvas id="chtLoadingSeqG2" class="chart"></canvas></div></div></section>
+        <section id="loadpar" class="page">
+          <div class="ctrlbar">
+            <label class="toggle purple"><input id="chkParSmooth" type="checkbox"> 平滑化</label>
+            <label class="toggle"><input class="chkPar" value="1" type="checkbox" checked> W1</label>
+            <label class="toggle"><input class="chkPar" value="2" type="checkbox" checked> W2</label>
+            <label class="toggle"><input class="chkPar" value="3" type="checkbox" checked> W3</label>
+            <label class="toggle"><input class="chkPar" value="4" type="checkbox" checked> W4</label>
+            <label class="toggle"><input class="chkPar" value="5" type="checkbox" checked> W5</label>
+            <label class="toggle"><input class="chkPar" value="6" type="checkbox" checked> W6</label>
+          </div>
+          <div class="split-half" style="height:calc(100% - 36px)"><div class="chartbox"><canvas id="chtLoadingParG1" class="chart"></canvas></div><div class="chartbox"><canvas id="chtLoadingParG2" class="chart"></canvas></div></div>
+        </section>
+        <section id="time" class="page"><div class="chartbox"><canvas id="chtTime" class="chart"></canvas></div></section>
+        <section id="wear" class="page"><div class="wear"><div id="lblWearInfo" class="wearinfo">—</div><div class="split-half"><div class="chartbox"><canvas id="chtWearG1Full" class="chart"></canvas></div><div class="chartbox"><canvas id="chtWearG2Full" class="chart"></canvas></div></div></div></section>
+        <section id="thickness" class="page">
+          <div class="ctrlbar">
+            <label class="toggle"><input id="chkThickG1" type="checkbox" checked> G1 研磨後厚度</label>
+            <label class="toggle c2"><input id="chkThickG2" type="checkbox" checked> G2 成品厚度</label>
+          </div>
+          <div class="chartbox" style="height:calc(100% - 36px)"><canvas id="chtThickness" class="chart"></canvas></div>
+        </section>
+        <section id="single" class="page">
+          <div class="single-layout">
+            <div class="single-ctrl">
+              <label for="nudWaferNo">Wafer No.:</label>
+              <input id="nudWaferNo" type="number" min="1" value="1">
+              <button id="btnLoadWafer">從批次載入</button>
+              <label>Or open:</label>
+              <input id="txtSingleFile" readonly>
+              <button id="btnOpenSingle">瀏覽...</button>
+            </div>
+            <div class="subtabs">
+              <div class="subtabstrip"><button class="subtab active" data-sub="singleG1">G1 粗磨</button><button class="subtab" data-sub="singleG2">G2 細磨</button></div>
+              <div id="singleG1" class="subpage active chartbox"><canvas id="chtSingleG1" class="chart"></canvas></div>
+              <div id="singleG2" class="subpage chartbox"><canvas id="chtSingleG2" class="chart"></canvas></div>
+            </div>
+          </div>
+        </section>
+        <section id="ai" class="page">
+          <div class="ai">
+            <div class="ctrlbar">
+              <label>AI 服務：</label><select id="cboProvider"><option>Google Gemini</option><option>Anthropic Claude</option><option>OpenRouter</option></select>
+              <label>API Key：</label><input id="txtApiKey" type="password">
+              <button id="btnSaveKey">儲存金鑰</button>
+              <button id="btnGenAI">產生 AI 建議</button>
+              <span id="lblAIStatus">就緒</span>
+            </div>
+            <textarea id="rtbAI"></textarea>
+          </div>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script>
-    const state = {
-      files: new Map(),
-      info: null,
-      records: [],
-      waferCache: new Map(),
-      folderName: "",
-    };
-
+    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw" };
     const $ = id => document.getElementById(id);
     const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v.toFixed(d)).toString() : "-";
     const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN;
     const min = a => a.length ? Math.min(...a) : NaN;
     const max = a => a.length ? Math.max(...a) : NaN;
-    const std = a => {
-      if (a.length < 2) return 0;
-      const m = avg(a);
-      return Math.sqrt(a.reduce((s, v) => s + Math.pow(v - m, 2), 0) / (a.length - 1));
+    const std = a => { if (a.length < 2) return 0; const m = avg(a); return Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / (a.length - 1)); };
+    const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+    const tr = {
+      tw: {
+        btnBatch: "📁  批次分析", btnWafer: "📄  單片 Wafer", btnPPT: "📊  產出 PPT", notLoaded: "尚未載入",
+        tabs: ["加工參數","移除量","抬針後移除量","負載狀況","負載分布","負載時序串聯","負載時序並聯","加工時間","平均磨耗","成品厚度","單片分析","優化建議"],
+        singleG1: "G1 粗磨", singleG2: "G2 細磨", load: "從批次載入", browse: "瀏覽...", orOpen: "Or open:",
+        aiService: "AI 服務：", apiKey: "API Key：", saveKey: "儲存金鑰", genAI: "產生 AI 建議", ready: "就緒",
+      },
+      cn: {
+        btnBatch: "📁  批量分析", btnWafer: "📄  单片 Wafer", btnPPT: "📊  产出 PPT", notLoaded: "尚未载入",
+        tabs: ["加工参数","移除量","抬针后移除量","负载状况","负载分布","负载时序串联","负载时序并联","加工时间","平均磨耗","成品厚度","单片分析","优化建议"],
+        singleG1: "G1 粗磨", singleG2: "G2 细磨", load: "从批次载入", browse: "浏览...", orOpen: "Or open:",
+        aiService: "AI 服务：", apiKey: "API Key：", saveKey: "保存密钥", genAI: "产生 AI 建议", ready: "就绪",
+      },
+      en: {
+        btnBatch: "📁  Batch", btnWafer: "📄  Single Wafer", btnPPT: "📊  Export PPT", notLoaded: "Not loaded",
+        tabs: ["Parameters","Removal","Post-lift","Loading","Load Dist.","Load Sequence","Load Parallel","Proc. Time","Avg Wear Rate","Thickness","Single","AI Suggest"],
+        singleG1: "G1 Rough", singleG2: "G2 Fine", load: "Load", browse: "Browse...", orOpen: "Or open:",
+        aiService: "AI Service:", apiKey: "API Key:", saveKey: "Save Key", genAI: "Generate", ready: "Ready",
+      }
     };
 
-    function setStatus(text, type = "") {
-      const el = $("status");
-      el.textContent = text;
-      el.className = `status ${type}`;
-    }
-
     function csvSplit(line) {
-      const out = [];
-      let cur = "", q = false;
+      const out = []; let cur = "", q = false;
       for (let i = 0; i < line.length; i++) {
         const ch = line[i];
         if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; continue; }
@@ -401,785 +388,178 @@
         if (ch === "," && !q) { out.push(cur); cur = ""; continue; }
         cur += ch;
       }
-      out.push(cur);
-      return out;
+      out.push(cur); return out;
     }
-
-    function num(v) {
-      const n = Number.parseFloat(String(v ?? "").trim());
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function int(v) {
-      const n = Number.parseInt(String(v ?? "").trim(), 10);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function parseDate(v) {
-      const s = String(v ?? "").trim();
-      if (!s || s === "0") return null;
-      const normalized = s.replace(/\//g, "-");
-      const d = new Date(normalized);
-      return Number.isNaN(d.getTime()) ? null : d;
-    }
-
-    function parseTimeSeconds(s) {
-      const m = String(s || "").trim().match(/^(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/);
-      if (!m) return NaN;
-      return int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3]) + int((m[4] || "0").padEnd(3, "0")) / 1000;
-    }
-
-    async function readFileText(file) {
-      const buf = await file.arrayBuffer();
-      try {
-        return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/\r\n/g, "\n");
-      } catch {
-        return new TextDecoder("big5").decode(buf).replace(/\r\n/g, "\n");
-      }
-    }
-
-    function fileKey(name) {
-      return name.replace(/\\/g, "/").split("/").pop().toLowerCase();
-    }
-
-    function findFile(name) {
-      return state.files.get(name.toLowerCase()) || null;
-    }
-
-    function findWaferFile(n) {
-      const stem = `w${String(n).padStart(4, "0")}`;
-      return findFile(`${stem}.csv`) || findFile(`${stem}.ini`);
-    }
-
-    function parseIni(text) {
-      const ini = {};
-      let sec = "";
-      for (const raw of text.split("\n")) {
-        const line = raw.trim();
-        if (!line || line.startsWith(";") || line.startsWith("#")) continue;
-        const m = line.match(/^\[(.+)\]$/);
-        if (m) { sec = m[1]; ini[sec] = ini[sec] || {}; continue; }
-        const p = line.indexOf("=");
-        if (p >= 0 && sec) ini[sec][line.slice(0, p).trim()] = line.slice(p + 1).trim();
-      }
-      return ini;
-    }
-
-    const iniGet = (ini, sec, key) => (ini[sec] && ini[sec][key]) || "";
+    const num = v => { const n = Number.parseFloat(String(v ?? "").trim()); return Number.isFinite(n) ? n : 0; };
+    const int = v => { const n = Number.parseInt(String(v ?? "").trim(), 10); return Number.isFinite(n) ? n : 0; };
+    function parseDate(v) { const s = String(v ?? "").trim(); if (!s || s === "0") return null; const d = new Date(s.replace(/\//g, "-")); return Number.isNaN(d.getTime()) ? null : d; }
+    function parseTimeSeconds(s) { const m = String(s || "").trim().match(/^(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/); return m ? int(m[1]) * 3600 + int(m[2]) * 60 + int(m[3]) + int((m[4] || "0").padEnd(3, "0")) / 1000 : NaN; }
+    async function readFileText(file) { const buf = await file.arrayBuffer(); try { return new TextDecoder("utf-8", { fatal: true }).decode(buf).replace(/\r\n/g, "\n"); } catch { return new TextDecoder("big5").decode(buf).replace(/\r\n/g, "\n"); } }
+    const fileKey = name => name.replace(/\\/g, "/").split("/").pop().toLowerCase();
+    const findFile = name => state.files.get(name.toLowerCase()) || null;
+    const findWaferFile = n => findFile(`w${String(n).padStart(4, "0")}.csv`) || findFile(`w${String(n).padStart(4, "0")}.ini`);
     const parts = v => String(v || "").split(",").map(x => x.trim());
     const at = (a, i) => (i >= 0 && i < a.length ? a[i] : "");
+    const iniGet = (ini, sec, key) => (ini[sec] && ini[sec][key]) || "";
+    function parseIni(text) { const ini = {}; let sec = ""; for (const raw of text.split("\n")) { const line = raw.trim(); if (!line || line.startsWith(";") || line.startsWith("#")) continue; const m = line.match(/^\[(.+)\]$/); if (m) { sec = m[1]; ini[sec] = ini[sec] || {}; continue; } const p = line.indexOf("="); if (p >= 0 && sec) ini[sec][line.slice(0, p).trim()] = line.slice(p + 1).trim(); } return ini; }
 
     function parseProcessCsv(text, fileCount = 0) {
-      const lines = text.split("\n").map(x => x.trimEnd());
-      const idx = {};
-      lines.forEach((l, i) => { if (/^\[.+\]$/.test(l.trim())) idx[l.trim()] = i; });
+      const lines = text.split("\n").map(x => x.trimEnd()); const idx = {}; lines.forEach((l, i) => { if (/^\[.+\]$/.test(l.trim())) idx[l.trim()] = i; });
       const info = { isValid: true };
-      if (idx["[Info]"] >= 0) {
-        const run = csvSplit(lines[idx["[Info]"] + 2] || "");
-        const mach = csvSplit(lines[idx["[Info]"] + 4] || "");
-        info.lotStartTime = parseDate(run[0]);
-        info.lotEndTime = parseDate(run[1]);
-        info.lotWaferAmount = int(run[3]);
-        info.machineModel = mach[0] || "";
-        info.serialNumber = mach[1] || "";
-        info.lotID = mach[2] || "";
-      }
-      if (idx["[WheelData]"] >= 0) {
-        parseWheelRow(csvSplit(lines[idx["[WheelData]"] + 2] || ""), true, info);
-        parseWheelRow(csvSplit(lines[idx["[WheelData]"] + 3] || ""), false, info);
-      }
-      info.g1PcsGrind ||= fileCount;
-      info.g2PcsGrind ||= fileCount;
-      if (idx["[Recipe]"] >= 0) {
-        const r = csvSplit(lines[idx["[Recipe]"] + 2] || "");
-        info.recipeNumber = r[0] || "";
-        info.recipeName = r[1] || "";
-      }
+      if (idx["[Info]"] >= 0) { const run = csvSplit(lines[idx["[Info]"] + 2] || ""); const mach = csvSplit(lines[idx["[Info]"] + 4] || ""); info.lotStartTime = parseDate(run[0]); info.lotEndTime = parseDate(run[1]); info.lotWaferAmount = int(run[3]); info.machineModel = mach[0] || ""; info.serialNumber = mach[1] || ""; info.lotID = mach[2] || ""; }
+      if (idx["[WheelData]"] >= 0) { parseWheelRow(csvSplit(lines[idx["[WheelData]"] + 2] || ""), true, info); parseWheelRow(csvSplit(lines[idx["[WheelData]"] + 3] || ""), false, info); }
+      info.g1PcsGrind ||= fileCount; info.g2PcsGrind ||= fileCount;
+      if (idx["[Recipe]"] >= 0) { const r = csvSplit(lines[idx["[Recipe]"] + 2] || ""); info.recipeNumber = r[0] || ""; info.recipeName = r[1] || ""; }
       if (idx["[G1_Recipe]"] >= 0) parseRecipeCsv(lines, idx["[G1_Recipe]"], true, info);
       if (idx["[G2_Recipe]"] >= 0) parseRecipeCsv(lines, idx["[G2_Recipe]"], false, info);
       return info;
     }
-
-    function parseWheelRow(cols, g1, info) {
-      const p = g1 ? "g1" : "g2";
-      info[`${p}WheelID`] = cols[1] || "";
-      info[`${p}TotalWear`] = num(cols[4]);
-      info[`${p}PcsOK`] = int(cols[5]);
-      info[`${p}PcsNG`] = int(cols[6]);
-      info[`${p}DressCount`] = int(cols[7]);
-      info[`${p}AvgWear`] = num(cols[9]);
-      info[`${p}PcsGrind`] = int(cols[10]);
-    }
-
-    function parseRecipeCsv(lines, start, g1, info) {
-      const p = g1 ? "g1" : "g2";
-      const params = csvSplit(lines[start + 2] || "");
-      const step1 = csvSplit(lines[start + 4] || "");
-      const step2 = csvSplit(lines[start + 5] || "");
-      info[`${p}TotalStep`] = int(params[7]);
-      info[`${p}FinalTarget`] = num(params[8]);
-      info[`${p}AirCut`] = num(params[9]);
-      info[`${p}SparkOut`] = num(params[12]);
-      info[`${p}EscapeCutDist`] = num(params[15]);
-      info[`${p}EscapeCutFeed`] = num(params[16]);
-      info[`${p}SpindleSpeed`] = num(step1[1]);
-      info[`${p}WorkpieceSpeed`] = num(step1[2]);
-      info[`${p}FeedRate1`] = num(step1[3]);
-      info[`${p}RemoveValue1`] = num(step1[10]);
-      info[`${p}FeedRate2`] = num(step2[3]);
-      info[`${p}RemoveValue2`] = num(step2[10]);
-    }
-
-    function parseProcessIni(text, fileCount = 0) {
-      const ini = parseIni(text);
-      const info = { isValid: true };
-      info.recipeNumber = iniGet(ini, "HMI", "Number");
-      info.recipeName = iniGet(ini, "HMI", "Name");
-      const id = parts(iniGet(ini, "Info", "ID"));
-      info.machineModel = at(id, 0);
-      info.serialNumber = at(id, 1);
-      info.lotID = at(id, 2);
-      const run = parts(iniGet(ini, "Info", "RunData"));
-      info.lotStartTime = parseDate(at(run, 0));
-      info.lotEndTime = parseDate(at(run, 1));
-      info.lotWaferAmount = int(at(run, 3));
-      info.g1WheelID = iniGet(ini, "Info", "G1WheelID");
-      info.g2WheelID = iniGet(ini, "Info", "G2WheelID");
-      parseWheelIni(parts(iniGet(ini, "Info", "G1WheelData")), true, info);
-      parseWheelIni(parts(iniGet(ini, "Info", "G2WheelData")), false, info);
-      info.g1PcsGrind ||= fileCount;
-      info.g2PcsGrind ||= fileCount;
-      parseRecipeIni(ini, "NC1", true, info);
-      parseRecipeIni(ini, "NC2", false, info);
-      return info;
-    }
-
-    function parseWheelIni(a, g1, info) {
-      const p = g1 ? "g1" : "g2";
-      info[`${p}TotalWear`] = num(at(a, 2));
-      info[`${p}PcsOK`] = int(at(a, 3));
-      info[`${p}PcsNG`] = int(at(a, 4));
-      info[`${p}DressCount`] = int(at(a, 5));
-      info[`${p}AvgWear`] = num(at(a, 7));
-      info[`${p}PcsGrind`] = int(at(a, 8));
-    }
-
-    function parseRecipeIni(ini, sec, g1, info) {
-      const p = g1 ? "g1" : "g2";
-      const s0 = parts(iniGet(ini, sec, "Step0"));
-      const s1 = parts(iniGet(ini, sec, "Step1"));
-      const s2 = parts(iniGet(ini, sec, "Step2"));
-      info[`${p}TotalStep`] = int(at(s0, 6));
-      info[`${p}FinalTarget`] = num(at(s0, 7));
-      info[`${p}AirCut`] = num(at(s0, 8));
-      info[`${p}SparkOut`] = num(at(s0, 11));
-      info[`${p}EscapeCutDist`] = num(at(s0, 14));
-      info[`${p}EscapeCutFeed`] = num(at(s0, 15));
-      info[`${p}SpindleSpeed`] = num(at(s1, 0));
-      info[`${p}WorkpieceSpeed`] = num(at(s1, 1));
-      info[`${p}FeedRate1`] = num(at(s1, 2));
-      info[`${p}RemoveValue1`] = num(at(s1, 9));
-      info[`${p}FeedRate2`] = num(at(s2, 2));
-      info[`${p}RemoveValue2`] = num(at(s2, 9));
-    }
-
-    function normalizeHeader(h) {
-      return h.trim().replace(/\s*\(.*?\)\s*$/, "");
-    }
+    function parseWheelRow(cols, g1, info) { const p = g1 ? "g1" : "g2"; info[`${p}WheelID`] = cols[1] || ""; info[`${p}TotalWear`] = num(cols[4]); info[`${p}PcsOK`] = int(cols[5]); info[`${p}PcsNG`] = int(cols[6]); info[`${p}DressCount`] = int(cols[7]); info[`${p}AvgWear`] = num(cols[9]); info[`${p}PcsGrind`] = int(cols[10]); }
+    function parseRecipeCsv(lines, start, g1, info) { const p = g1 ? "g1" : "g2"; const par = csvSplit(lines[start + 2] || ""), s1 = csvSplit(lines[start + 4] || ""), s2 = csvSplit(lines[start + 5] || ""); info[`${p}TotalStep`] = int(par[7]); info[`${p}FinalTarget`] = num(par[8]); info[`${p}AirCut`] = num(par[9]); info[`${p}SparkOut`] = num(par[12]); info[`${p}EscapeCutDist`] = num(par[15]); info[`${p}EscapeCutFeed`] = num(par[16]); info[`${p}SpindleSpeed`] = num(s1[1]); info[`${p}WorkpieceSpeed`] = num(s1[2]); info[`${p}FeedRate1`] = num(s1[3]); info[`${p}RemoveValue1`] = num(s1[10]); info[`${p}FeedRate2`] = num(s2[3]); info[`${p}RemoveValue2`] = num(s2[10]); }
+    function parseProcessIni(text, fileCount = 0) { const ini = parseIni(text), info = { isValid: true }; info.recipeNumber = iniGet(ini, "HMI", "Number"); info.recipeName = iniGet(ini, "HMI", "Name"); const id = parts(iniGet(ini, "Info", "ID")); info.machineModel = at(id, 0); info.serialNumber = at(id, 1); info.lotID = at(id, 2); const run = parts(iniGet(ini, "Info", "RunData")); info.lotStartTime = parseDate(at(run, 0)); info.lotEndTime = parseDate(at(run, 1)); info.lotWaferAmount = int(at(run, 3)); info.g1WheelID = iniGet(ini, "Info", "G1WheelID"); info.g2WheelID = iniGet(ini, "Info", "G2WheelID"); parseWheelIni(parts(iniGet(ini, "Info", "G1WheelData")), true, info); parseWheelIni(parts(iniGet(ini, "Info", "G2WheelData")), false, info); info.g1PcsGrind ||= fileCount; info.g2PcsGrind ||= fileCount; parseRecipeIni(ini, "NC1", true, info); parseRecipeIni(ini, "NC2", false, info); return info; }
+    function parseWheelIni(a, g1, info) { const p = g1 ? "g1" : "g2"; info[`${p}TotalWear`] = num(at(a, 2)); info[`${p}PcsOK`] = int(at(a, 3)); info[`${p}PcsNG`] = int(at(a, 4)); info[`${p}DressCount`] = int(at(a, 5)); info[`${p}AvgWear`] = num(at(a, 7)); info[`${p}PcsGrind`] = int(at(a, 8)); }
+    function parseRecipeIni(ini, sec, g1, info) { const p = g1 ? "g1" : "g2"; const s0 = parts(iniGet(ini, sec, "Step0")), s1 = parts(iniGet(ini, sec, "Step1")), s2 = parts(iniGet(ini, sec, "Step2")); info[`${p}TotalStep`] = int(at(s0, 6)); info[`${p}FinalTarget`] = num(at(s0, 7)); info[`${p}AirCut`] = num(at(s0, 8)); info[`${p}SparkOut`] = num(at(s0, 11)); info[`${p}EscapeCutDist`] = num(at(s0, 14)); info[`${p}EscapeCutFeed`] = num(at(s0, 15)); info[`${p}SpindleSpeed`] = num(at(s1, 0)); info[`${p}WorkpieceSpeed`] = num(at(s1, 1)); info[`${p}FeedRate1`] = num(at(s1, 2)); info[`${p}RemoveValue1`] = num(at(s1, 9)); info[`${p}FeedRate2`] = num(at(s2, 2)); info[`${p}RemoveValue2`] = num(at(s2, 9)); }
 
     function parseBatchCsv(text) {
-      const lines = text.split("\n").filter(x => x.trim());
-      if (lines.length < 2) return [];
-      const header = csvSplit(lines[0]);
-      const idx = {};
-      header.forEach((h, i) => { idx[h.trim()] = i; idx[normalizeHeader(h)] = i; });
-      const alias = {
-        G1_WaferNum: "G1_Wafer", G1_ChuckNum: "G1_Chuck", G1_T2: "G1_T2Pos", G1_TarSV: "G1_TargetSV",
-        G1_TarPV: "G1_TargetPV", G1_LaMin: "G1_LastWaferMin", G1_S1Peak: "G1_PeakS1", G1_S2Peak: "G1_PeakS2", G1_ZPeak: "G1_PeakZ",
-        G2_WaferNum: "G2_Wafer", G2_ChuckNum: "G2_Chuck", G2_T2: "G2_T2Pos", G2_TarSV: "G2_TargetSV",
-        G2_TarPV: "G2_TargetPV", G2_LaMin: "G2_LastWaferMin", G2_S1Peak: "G2_PeakS1", G2_S2Peak: "G2_PeakS2", G2_ZPeak: "G2_PeakZ",
-      };
-      for (const [oldName, newName] of Object.entries(alias)) if (idx[oldName] != null && idx[newName] == null) idx[newName] = idx[oldName];
+      const lines = text.split("\n").filter(x => x.trim()); if (lines.length < 2) return [];
+      const header = csvSplit(lines[0]); const idx = {}; header.forEach((h, i) => { idx[h.trim()] = i; idx[h.trim().replace(/\s*\(.*?\)\s*$/, "")] = i; });
+      const alias = { G1_WaferNum:"G1_Wafer",G1_ChuckNum:"G1_Chuck",G1_T2:"G1_T2Pos",G1_TarSV:"G1_TargetSV",G1_TarPV:"G1_TargetPV",G1_LaMin:"G1_LastWaferMin",G1_S1Peak:"G1_PeakS1",G1_S2Peak:"G1_PeakS2",G1_ZPeak:"G1_PeakZ",G2_WaferNum:"G2_Wafer",G2_ChuckNum:"G2_Chuck",G2_T2:"G2_T2Pos",G2_TarSV:"G2_TargetSV",G2_TarPV:"G2_TargetPV",G2_LaMin:"G2_LastWaferMin",G2_S1Peak:"G2_PeakS1",G2_S2Peak:"G2_PeakS2",G2_ZPeak:"G2_PeakZ" };
+      for (const [o, n] of Object.entries(alias)) if (idx[o] != null && idx[n] == null) idx[n] = idx[o];
       const get = (c, k) => c[idx[k]] ?? "";
-      return lines.slice(1).map(line => {
-        const c = csvSplit(line);
-        const r = {};
-        for (const g of ["G1", "G2"]) {
-          const p = g.toLowerCase();
-          r[`${p}Wafer`] = int(get(c, `${g}_Wafer`));
-          r[`${p}Chuck`] = int(get(c, `${g}_Chuck`));
-          r[`${p}Income`] = num(get(c, `${g}_Income`));
-          r[`${p}TargetSV`] = num(get(c, `${g}_TargetSV`));
-          r[`${p}TargetPV`] = num(get(c, `${g}_TargetPV`));
-          r[`${p}LastWaferMin`] = num(get(c, `${g}_LastWaferMin`));
-          r[`${p}PeakS1`] = num(get(c, `${g}_PeakS1`));
-          r[`${p}PeakS2`] = num(get(c, `${g}_PeakS2`));
-          r[`${p}PeakZ`] = num(get(c, `${g}_PeakZ`));
-          r[`${p}SWear`] = num(get(c, `${g}_SWear`));
-          r[`${p}TWear`] = num(get(c, `${g}_TWear`));
-          r[`${p}Result`] = String(get(c, `${g}_Result`) || "").trim();
-          r[`${p}StartTime`] = parseDate(get(c, `${g}_StartTime`));
-          r[`${p}EndTime`] = parseDate(get(c, `${g}_EndTime`));
-        }
-        enrichRecord(r);
-        return r;
-      }).filter(r => r.g1Wafer || r.g2Wafer);
+      return lines.slice(1).map(line => { const c = csvSplit(line), r = {}; for (const g of ["G1","G2"]) { const p = g.toLowerCase(); r[`${p}Wafer`] = int(get(c, `${g}_Wafer`)); r[`${p}Chuck`] = int(get(c, `${g}_Chuck`)); r[`${p}Income`] = num(get(c, `${g}_Income`)); r[`${p}TargetSV`] = num(get(c, `${g}_TargetSV`)); r[`${p}TargetPV`] = num(get(c, `${g}_TargetPV`)); r[`${p}LastWaferMin`] = num(get(c, `${g}_LastWaferMin`)); r[`${p}PeakS1`] = num(get(c, `${g}_PeakS1`)); r[`${p}PeakS2`] = num(get(c, `${g}_PeakS2`)); r[`${p}PeakZ`] = num(get(c, `${g}_PeakZ`)); r[`${p}SWear`] = num(get(c, `${g}_SWear`)); r[`${p}TWear`] = num(get(c, `${g}_TWear`)); r[`${p}Result`] = String(get(c, `${g}_Result`) || "").trim(); r[`${p}StartTime`] = parseDate(get(c, `${g}_StartTime`)); r[`${p}EndTime`] = parseDate(get(c, `${g}_EndTime`)); } enrichRecord(r); return r; }).filter(r => r.g1Wafer || r.g2Wafer);
     }
-
-    async function parseBatchIniFromFiles() {
-      const plog = findFile("processlog.ini");
-      let cancel = [false, false];
-      if (plog) {
-        const ini = parseIni(await readFileText(plog));
-        const s0 = parts(iniGet(ini, "NC3", "Step0"));
-        cancel = [at(s0, 6) === "1", at(s0, 7) === "1"];
-      }
-      const waferFiles = [...state.files.values()].filter(f => /^w\d+\.ini$/i.test(fileKey(f.name))).sort((a, b) => fileKey(a.name).localeCompare(fileKey(b.name)));
-      const out = [];
-      for (const file of waferFiles) {
-        const ini = parseIni(await readFileText(file));
-        const rec = parseWaferIniRecord(ini, file.name, cancel);
-        if (rec.g1Wafer || rec.g2Wafer) out.push(rec);
-      }
-      return out;
-    }
-
-    function parseWaferIniRecord(ini, fileName, cancel) {
-      const rec = {};
-      const cass = parts(iniGet(ini, "BlockInfo", "Cassette"));
-      const data = parts(iniGet(ini, "BlockInfo", "Data"));
-      let wnum = int(at(cass, 2)) || int(fileKey(fileName).replace(/\D/g, ""));
-      if (!cancel[0]) fillGrindIni(rec, ini, data, "G1", false, wnum);
-      if (!cancel[1]) fillGrindIni(rec, ini, data, "G2", true, wnum);
-      enrichRecord(rec);
-      return rec;
-    }
-
-    function fillGrindIni(rec, ini, data, g, isG2, wnum) {
-      const p = g.toLowerCase();
-      const step0 = parts(iniGet(ini, `${g}_Recipe`, "Step0"));
-      const runSteps = int(at(step0, 6));
-      const before = parts(iniGet(ini, `${g}_Wheel`, "BeforeGrd"));
-      const after = parts(iniGet(ini, `${g}_Wheel`, `AfterGrdStep${runSteps}`));
-      let singleWear = 0;
-      for (let i = 1; i <= runSteps; i++) singleWear += num(at(parts(iniGet(ini, `${g}_Wheel`, `AfterGrdStep${i}`)), 3));
-      const peak = parts(iniGet(ini, "BlockInfo", `${g}PeakLoading`));
-      const t = parts(iniGet(ini, "BlockInfo", `${g}_Time`));
-      const raw = at(data, isG2 ? 2 : 1);
-      rec[`${p}Wafer`] = wnum;
-      rec[`${p}Chuck`] = int(at(data, 0));
-      rec[`${p}Income`] = num(at(before, 12));
-      rec[`${p}TargetSV`] = num(at(step0, 7));
-      rec[`${p}TargetPV`] = num(at(after, 11));
-      rec[`${p}LastWaferMin`] = num(at(before, 11));
-      rec[`${p}PeakS1`] = num(at(peak, 0));
-      rec[`${p}PeakS2`] = num(at(peak, 1));
-      rec[`${p}PeakZ`] = num(at(peak, 2));
-      rec[`${p}SWear`] = Number(singleWear.toFixed(1));
-      rec[`${p}TWear`] = num(at(after, 4));
-      rec[`${p}Result`] = raw === "0" ? "OK" : (raw === "1" || raw === "" ? "NG" : "PASS");
-      rec[`${p}StartTime`] = parseDate(at(t, 0));
-      rec[`${p}EndTime`] = parseDate(at(t, 1));
-    }
-
-    function enrichRecord(r) {
-      r.g1Removal = r.g1Income - r.g1LastWaferMin;
-      r.g2Removal = r.g2Income - r.g2LastWaferMin;
-      r.g1PostLift = r.g1TargetPV - r.g1LastWaferMin;
-      r.g2PostLift = r.g2TargetPV - r.g2LastWaferMin;
-      r.g1Sec = r.g1StartTime && r.g1EndTime ? Math.max(0, (r.g1EndTime - r.g1StartTime) / 1000) : 0;
-      r.g2Sec = r.g2StartTime && r.g2EndTime ? Math.max(0, (r.g2EndTime - r.g2StartTime) / 1000) : 0;
-      r.g1OK = r.g1Result === "OK";
-      r.g2OK = r.g2Result === "OK";
-      r.wafer = r.g1Wafer || r.g2Wafer;
-      r.waitG1 = 0;
-      r.waitG2 = 0;
-    }
-
-    function calculateWaits(records) {
-      const sorted = [...records].sort((a, b) => (a.wafer || 0) - (b.wafer || 0));
-      for (let i = 1; i < sorted.length; i++) {
-        const prev = sorted[i - 1], cur = sorted[i];
-        if (prev.g1EndTime && cur.g1StartTime) cur.waitG1 = Math.max(0, (cur.g1StartTime - prev.g1EndTime) / 1000);
-        if (prev.g2EndTime && cur.g2StartTime) cur.waitG2 = Math.max(0, (cur.g2StartTime - prev.g2EndTime) / 1000);
-      }
-    }
+    async function parseBatchIniFromFiles() { const plog = findFile("processlog.ini"); let cancel = [false, false]; if (plog) { const ini = parseIni(await readFileText(plog)); const s0 = parts(iniGet(ini, "NC3", "Step0")); cancel = [at(s0, 6) === "1", at(s0, 7) === "1"]; } const waferFiles = [...state.files.values()].filter(f => /^w\d+\.ini$/i.test(fileKey(f.name))).sort((a, b) => fileKey(a.name).localeCompare(fileKey(b.name))); const out = []; for (const file of waferFiles) { const ini = parseIni(await readFileText(file)); const rec = parseWaferIniRecord(ini, file.name, cancel); if (rec.g1Wafer || rec.g2Wafer) out.push(rec); } return out; }
+    function parseWaferIniRecord(ini, fileName, cancel) { const rec = {}; const cass = parts(iniGet(ini, "BlockInfo", "Cassette")); const data = parts(iniGet(ini, "BlockInfo", "Data")); let wnum = int(at(cass, 2)) || int(fileKey(fileName).replace(/\D/g, "")); if (!cancel[0]) fillGrindIni(rec, ini, data, "G1", false, wnum); if (!cancel[1]) fillGrindIni(rec, ini, data, "G2", true, wnum); enrichRecord(rec); return rec; }
+    function fillGrindIni(rec, ini, data, g, isG2, wnum) { const p = g.toLowerCase(); const step0 = parts(iniGet(ini, `${g}_Recipe`, "Step0")); const runSteps = int(at(step0, 6)); const before = parts(iniGet(ini, `${g}_Wheel`, "BeforeGrd")); const after = parts(iniGet(ini, `${g}_Wheel`, `AfterGrdStep${runSteps}`)); let singleWear = 0; for (let i = 1; i <= runSteps; i++) singleWear += num(at(parts(iniGet(ini, `${g}_Wheel`, `AfterGrdStep${i}`)), 3)); const peak = parts(iniGet(ini, "BlockInfo", `${g}PeakLoading`)); const t = parts(iniGet(ini, "BlockInfo", `${g}_Time`)); const raw = at(data, isG2 ? 2 : 1); rset(rec, p, { Wafer: wnum, Chuck: int(at(data, 0)), Income: num(at(before, 12)), TargetSV: num(at(step0, 7)), TargetPV: num(at(after, 11)), LastWaferMin: num(at(before, 11)), PeakS1: num(at(peak, 0)), PeakS2: num(at(peak, 1)), PeakZ: num(at(peak, 2)), SWear: Number(singleWear.toFixed(1)), TWear: num(at(after, 4)), Result: raw === "0" ? "OK" : (raw === "1" || raw === "" ? "NG" : "PASS"), StartTime: parseDate(at(t, 0)), EndTime: parseDate(at(t, 1)) }); }
+    function rset(rec, p, vals) { for (const [k, v] of Object.entries(vals)) rec[`${p}${k}`] = v; }
+    function enrichRecord(r) { r.g1Removal = r.g1Income - r.g1LastWaferMin; r.g2Removal = r.g2Income - r.g2LastWaferMin; r.g1PostLift = r.g1TargetPV - r.g1LastWaferMin; r.g2PostLift = r.g2TargetPV - r.g2LastWaferMin; r.g1Sec = r.g1StartTime && r.g1EndTime ? Math.max(0, (r.g1EndTime - r.g1StartTime) / 1000) : 0; r.g2Sec = r.g2StartTime && r.g2EndTime ? Math.max(0, (r.g2EndTime - r.g2StartTime) / 1000) : 0; r.g1OK = r.g1Result === "OK"; r.g2OK = r.g2Result === "OK"; r.wafer = r.g1Wafer || r.g2Wafer; r.waitG1 = 0; r.waitG2 = 0; }
+    function calculateWaits(records) { const s = [...records].sort((a, b) => (a.wafer || 0) - (b.wafer || 0)); for (let i = 1; i < s.length; i++) { const p = s[i - 1], c = s[i]; if (p.g1EndTime && c.g1StartTime) c.waitG1 = Math.max(0, (c.g1StartTime - p.g1EndTime) / 1000); if (p.g2EndTime && c.g2StartTime) c.waitG2 = Math.max(0, (c.g2StartTime - p.g2EndTime) / 1000); } }
 
     async function loadBatchFromFiles(files) {
-      state.files.clear();
-      state.waferCache.clear();
+      state.files.clear(); state.waferCache.clear(); state.seqLoaded = false;
       for (const f of files) state.files.set(fileKey(f.webkitRelativePath || f.name), f);
       state.folderName = files[0]?.webkitRelativePath?.split(/[\\/]/)[0] || "";
       const waferCount = [...state.files.keys()].filter(n => /^w\d+\.(csv|ini)$/i.test(n)).length;
-      const processCsv = findFile("processlog.csv");
-      const processIni = findFile("processlog.ini");
-      if (!processCsv && !processIni) throw new Error("找不到 ProcessLog.csv 或 ProcessLog.ini");
+      const processCsv = findFile("processlog.csv"), processIni = findFile("processlog.ini");
+      if (!processCsv && !processIni) throw new Error("ProcessLog.csv or ProcessLog.ini not found.");
       state.info = processCsv ? parseProcessCsv(await readFileText(processCsv), waferCount) : parseProcessIni(await readFileText(processIni), waferCount);
       const batchCsv = findFile("waferbatchlog.csv");
       state.records = batchCsv ? parseBatchCsv(await readFileText(batchCsv)) : await parseBatchIniFromFiles();
       calculateWaits(state.records);
-      if (!state.records.length) throw new Error("沒有解析到晶片批次資料");
+      if (!state.records.length) throw new Error("No wafer batch records.");
+      $("lblPath").textContent = state.folderName || "Loaded";
+      $("btnPPT").disabled = false;
       renderAll();
-      setStatus(`已載入 ${state.folderName || "批次"}：${state.records.length} 片、${state.files.size} 個檔案。`, "ok");
+      activateTab("params");
+      loadSequenceCharts();
     }
 
-    function renderAll() {
-      renderMetrics();
-      renderOverview();
-      renderParams();
-      renderRemoval();
-      renderLoading();
-      renderTime();
-      renderWear();
-      renderThickness();
-      renderSuggestions();
-    }
+    function renderAll() { if (!state.records.length) return; renderInfo(); renderParams(); renderRemoval(); renderPostLift(); renderLoading(); renderLoadDist(); renderTime(); renderWear(); renderThickness(); renderAISeed(); }
+    function renderInfo() { const i = state.info || {}; const g1ng = state.records.filter(r => r.g1Result && !r.g1OK).length, g2ng = state.records.filter(r => r.g2Result && !r.g2OK).length; const hours = i.lotStartTime && i.lotEndTime ? (i.lotEndTime - i.lotStartTime) / 3600000 : NaN; const uph = Number.isFinite(hours) && hours > 0 ? state.records.length / hours : 0; $("lblInfo").textContent = `  Machine:${i.machineModel || ""}  SN:${i.serialNumber || ""}  Recipe:${i.recipeNumber || ""} ${i.recipeName || ""}  Wafers:${state.records.length}  UPH:${fmt(uph, 1)}  NG(G1/G2):${g1ng}/${g2ng}`; }
+    function table(headers, rows) { return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c ?? "-"}</td>`).join("")}</tr>`).join("")}</tbody></table>`; }
+    function renderParams() { const i = state.info || {}; const rows = [["砂輪", i.g1WheelID, i.g2WheelID],["砂輪轉速 (rpm)", i.g1SpindleSpeed, i.g2SpindleSpeed],["工件轉速 (rpm)", i.g1WorkpieceSpeed, i.g2WorkpieceSpeed],["速差比", i.g1WorkpieceSpeed ? i.g1SpindleSpeed / i.g1WorkpieceSpeed : 0, i.g2WorkpieceSpeed ? i.g2SpindleSpeed / i.g2WorkpieceSpeed : 0],["Air cut (um)", i.g1AirCut, i.g2AirCut],["移除量 Step1 (um)", i.g1RemoveValue1, i.g2RemoveValue1],["進給速率 Step1 (um/s)", i.g1FeedRate1, i.g2FeedRate1],["移除量 Step2 (um)", i.g1RemoveValue2, i.g2RemoveValue2],["進給速率 Step2 (um/s)", i.g1FeedRate2, i.g2FeedRate2],["Spark out (sec)", i.g1SparkOut, i.g2SparkOut],["慢拉距離 (um)", i.g1EscapeCutDist, i.g2EscapeCutDist],["慢拉速率 (um/s)", i.g1EscapeCutFeed, i.g2EscapeCutFeed],["最終目標 (um)", i.g1FinalTarget, i.g2FinalTarget],["研磨步數", i.g1TotalStep, i.g2TotalStep],["已磨片數", i.g1PcsGrind, i.g2PcsGrind],["平均磨耗 (um)", i.g1AvgWear, i.g2AvgWear],["UPH", i.g1UPH || "", i.g2UPH || ""]]; $("dgvParams").innerHTML = table(["參數", "G1 粗磨", "G2 細磨"], rows.map(r => [r[0], typeof r[1] === "number" ? fmt(r[1], 4) : r[1], typeof r[2] === "number" ? fmt(r[2], 4) : r[2]])); }
+    function okSeries(g, key) { const p = g.toLowerCase(); return state.records.filter(r => r[`${p}OK`] && Number.isFinite(r[key])).map(r => ({ x: r.wafer, y: r[key] })); }
+    function renderRemoval() { drawLines($("chtRemoval"), [{ name:"G1 粗磨", color:"g1", points:okSeries("G1","g1Removal") }, { name:"G2 細磨", color:"g2", points:okSeries("G2","g2Removal") }], "晶片序號", "移除量 (um)", "G1/G2 移除量（OK 片）"); const rows = [statRow("G1", okSeries("G1","g1Removal").map(p=>p.y)), statRow("G2", okSeries("G2","g2Removal").map(p=>p.y))]; $("dgvRemovalStats").innerHTML = table(["統計","平均值","標準差","最大值","最小值","樣本數"], rows); }
+    function statRow(name, a) { return [name, fmt(avg(a)), fmt(std(a)), fmt(max(a)), fmt(min(a)), a.length]; }
+    function renderPostLift() { drawLines($("chtPostLift"), [{ name:"G1", color:"g1", points:okSeries("G1","g1PostLift") }, { name:"G2", color:"g2", points:okSeries("G2","g2PostLift") }], "晶片序號", "移除量 (um)", "G1/G2 抬針後移除量（OK 片）"); }
+    function selectedChucks() { return [1,2,3].filter(n => $(`chkLoadChuck${n}`).checked); }
+    function renderLoading() { const ch = selectedChucks(); if ($("chkLoadOverall").checked) { drawLines($("chtLoadingG1"), [{ name:"G1", color:"g1", points:state.records.filter(r => r.g1OK && ch.includes(r.g1Chuck)).map(r => ({x:r.wafer,y:r.g1PeakS1})) }, { name:"G2", color:"g2", points:state.records.filter(r => r.g2OK && ch.includes(r.g2Chuck)).map(r => ({x:r.wafer,y:r.g2PeakS1})) }], "Wafer#", "S1 Loading (%)", "G1 / G2  S1 Peak Loading（全批次）"); drawLines($("chtLoadingG2"), [], "", "", ""); return; } drawLines($("chtLoadingG1"), chuckSeries("g1", ch), "Wafer#", "S1 Loading (%)", "G1 粗磨  S1 Peak (%)"); drawLines($("chtLoadingG2"), chuckSeries("g2", ch), "Wafer#", "S1 Loading (%)", "G2 細磨  S1 Peak (%)"); }
+    function chuckSeries(g, ch) { return ch.map(n => ({ name:`Chuck ${n}`, color:n===1?"g1":n===2?"g2":"c3", points:state.records.filter(r => r[`${g}OK`] && r[`${g}Chuck`] === n).map(r => ({x:r.wafer,y:r[`${g}PeakS1`]})) })); }
+    function renderLoadDist() { const groups = []; for (const g of ["g1","g2"]) for (const c of [1,2,3]) groups.push({ label:`${g.toUpperCase()} C${c}`, values:state.records.filter(r => r[`${g}OK`] && r[`${g}Chuck`] === c).map(r => r[`${g}PeakS1`]).filter(Number.isFinite) }); drawBox($("chtLoadingDist"), groups, "G1/G2 各 Chuck  S1 Peak 分布（Q1/Q3 箱線圖）"); }
+    function renderTime() { drawLines($("chtTime"), [{name:"G1 加工秒", color:"g1", points:okSeries("G1","g1Sec")},{name:"G2 加工秒", color:"g2", points:okSeries("G2","g2Sec")},{name:"G1 等待時間", color:"orange", points:state.records.map(r=>({x:r.wafer,y:r.waitG1||0}))},{name:"G2 等待時間", color:"purple", points:state.records.map(r=>({x:r.wafer,y:r.waitG2||0}))}], "晶片序號", "加工時間 (秒)", "加工時間 / 等待時間（OK 片）"); }
+    function renderWear() { const wr = g => { const p = g.toLowerCase(); return state.records.filter(r => r[`${p}OK`] && Math.abs(r[`${p}Removal`]) > 0).map(r => ({x:r.wafer,y:r[`${p}SWear`] / Math.abs(r[`${p}Removal`])})); }; const g1 = wr("G1"), g2 = wr("G2"); $("lblWearInfo").textContent = `  G1 平均磨耗率：${fmt(avg(g1.map(p=>p.y)),5)}    G2 平均磨耗率：${fmt(avg(g2.map(p=>p.y)),5)}    (= ΣSWear / ΣRemoval, lower = more durable wheel)`; drawLines($("chtWearG1Full"), [{name:"Per-wafer Rate", color:"g1", points:g1},{name:"平均", color:"orange", points:flatLine(g1, avg(g1.map(p=>p.y)))}], "Wafer#", "磨耗率", "G1 平均磨耗率（全批次）"); drawLines($("chtWearG2Full"), [{name:"Per-wafer Rate", color:"g2", points:g2},{name:"平均", color:"orange", points:flatLine(g2, avg(g2.map(p=>p.y)))}], "Wafer#", "磨耗率", "G2 平均磨耗率（全批次）"); }
+    function flatLine(points, y) { return points.length ? [{x:points[0].x,y},{x:points[points.length-1].x,y}] : []; }
+    function renderThickness() { const s = []; if ($("chkThickG1").checked) s.push({name:"G1 研磨後厚度", color:"g1", points:okSeries("G1","g1LastWaferMin")}); if ($("chkThickG2").checked) s.push({name:"G2 成品厚度", color:"g2", points:okSeries("G2","g2LastWaferMin")}); drawLines($("chtThickness"), s, "晶片序號", "厚度 (um)", "G1 研磨後 / G2 成品厚度（OK 片）"); }
 
-    function renderMetrics() {
-      const records = state.records;
-      $("mWafers").textContent = records.length || "-";
-      const g1NG = records.filter(r => r.g1Result && !r.g1OK).length;
-      const g2NG = records.filter(r => r.g2Result && !r.g2OK).length;
-      $("mG1NG").textContent = g1NG;
-      $("mG2NG").textContent = g2NG;
-      const totalHours = state.info?.lotStartTime && state.info?.lotEndTime ? (state.info.lotEndTime - state.info.lotStartTime) / 3600000 : NaN;
-      $("mUPH").textContent = Number.isFinite(totalHours) && totalHours > 0 ? fmt(records.length / totalHours, 1) : "-";
-    }
+    async function loadSequenceCharts() { const files = [...state.files.values()].filter(f => /^w\d+\.(csv|ini)$/i.test(fileKey(f.name))).sort((a,b)=>fileKey(a.name).localeCompare(fileKey(b.name))).slice(0,20); const wafers=[]; for (const f of files) wafers.push(await parseWafer(f)); state.seqWafers = wafers; state.seqLoaded = true; renderSeq(); renderPar(); }
+    function renderSeq() { if (!state.seqLoaded) return; drawLines($("chtLoadingSeqG1"), sequenceSeries("g1", 20), "sec", "S1 Loading (%)", "G1 粗磨  S1 Loading 時序串聯"); drawLines($("chtLoadingSeqG2"), sequenceSeries("g2", 20), "sec", "S1 Loading (%)", "G2 細磨  S1 Loading 時序串聯"); }
+    function sequenceSeries(g, maxW) { let offset = 0; return (state.seqWafers || []).slice(0,maxW).map((w, idx) => { const steps = w[`${g}Steps`] || []; const pts = steps.map(p => ({x:p.relativeSec + offset, y:p.s1Loading})); if (pts.length) offset = pts[pts.length-1].x; return {name:`W${idx+1} C${w.chuck||"-"}`, color: palette(idx), points:pts}; }); }
+    function renderPar() { if (!state.seqLoaded) return; const selected = [...document.querySelectorAll(".chkPar")].filter(x=>x.checked).map(x=>int(x.value)); drawLines($("chtLoadingParG1"), parallelSeries("g1", selected), "sec", "S1 Loading (%)", "G1 粗磨  S1 Loading 時序並聯"); drawLines($("chtLoadingParG2"), parallelSeries("g2", selected), "sec", "S1 Loading (%)", "G2 細磨  S1 Loading 時序並聯"); }
+    function parallelSeries(g, selected) { const smooth = $("chkParSmooth").checked; return (state.seqWafers || []).slice(0,6).map((w, idx) => { if (!selected.includes(idx+1)) return null; let pts = (w[`${g}Steps`] || []).map(p => ({x:p.relativeSec, y:p.s1Loading})); if (smooth) pts = movingAverage(pts, 15); return {name:`W${idx+1} C${w.chuck||"-"}`, color:palette(idx), points:pts}; }).filter(Boolean); }
+    function movingAverage(pts, win) { return pts.map((p,i) => { const a = pts.slice(Math.max(0,i-win+1), i+1).map(x=>x.y); return {x:p.x, y:avg(a)}; }); }
+    function palette(i) { return ["#1f77b4","#aec7e8","#ff7f0e","#ffbb78","#2ca02c","#98df8a","#d62728","#ff9896","#9467bd","#c5b0d5","#8c564b","#c49c94","#e377c2","#f7b6d2","#7f7f7f","#c7c7c7","#bcbd22","#dbdb8d","#17becf","#9edae5"][i%20]; }
 
-    function kvTable(rows) {
-      return `<table><tbody>${rows.map(([k, v]) => `<tr><th>${k}</th><td>${v || "-"}</td></tr>`).join("")}</tbody></table>`;
-    }
+    function parseWaferCsvData(text, fileName) { const data = { fileName, waferNumber:int(fileKey(fileName).replace(/\D/g,"")), chuck:0, g1Result:"", g2Result:"", g1Steps:[], g2Steps:[] }; let section="", isG1=true, inStep=false, start=NaN, offset=0, prevEnd=0; for (const raw of text.split("\n")) { const line=raw.trimEnd(); if (!line.trim()) continue; if (/^\[.+\]$/.test(line.trim())) { section=line.trim(); inStep=false; start=NaN; offset=prevEnd; if (section.startsWith("[G1_Step")) isG1=true; if (section.startsWith("[G2_Step")) { if (isG1) prevEnd=0; isG1=false; offset=prevEnd; } continue; } const c=csvSplit(line); if (section==="[WaferInfo]") parseWaferInfoLine(c,data); if (section.startsWith("[G1_Step") || section.startsWith("[G2_Step")) { if (c[0]==="Time") { inStep=true; continue; } if (!inStep || c.length<=9) continue; const t=parseTimeSeconds(c[0]); if (!Number.isFinite(t)) continue; if (!Number.isFinite(start)) start=t; const rec=stepRecord(c,t-start+offset); prevEnd=rec.relativeSec; (isG1?data.g1Steps:data.g2Steps).push(rec); } } fixRelative(data.g1Steps); fixRelative(data.g2Steps); return data; }
+    function parseWaferInfoLine(c, data) { if (c[0]==="ChuckNumber") return; if (int(c[0]) && c.length>=9) { data.chuck=int(c[0]); data.g1Result=c[1]||""; data.g2Result=c[2]||""; } if (c[0]==="CassetteNumber") return; if (int(c[0]) && c.length>=3) data.waferNumber=int(c[2]); if (c[0]==="G1") { data.g1Income=num(c[1]); data.g1TargetSV=num(c[2]); data.g1TargetPV=num(c[3]); data.g1LastWaferMin=num(c[5]); } if (c[0]==="G2") { data.g2Income=num(c[1]); data.g2TargetSV=num(c[2]); data.g2TargetPV=num(c[3]); data.g2LastWaferMin=num(c[5]); } }
+    function parseWaferIniData(text, fileName) { const ini=parseIni(text); const data={fileName, waferNumber:int(fileKey(fileName).replace(/\D/g,"")), chuck:0, g1Steps:[], g2Steps:[]}; const block=parts(iniGet(ini,"BlockInfo","Data")); data.chuck=int(at(block,0)); data.g1Result=at(block,1)==="0"?"OK":"NG"; data.g2Result=at(block,2)==="0"?"OK":"NG"; data.waferNumber=int(at(parts(iniGet(ini,"BlockInfo","Cassette")),2))||data.waferNumber; fillWaferSummaryIni(ini,"G1",data); fillWaferSummaryIni(ini,"G2",data); fillWaferStepsIni(ini,"G1",data.g1Steps); fillWaferStepsIni(ini,"G2",data.g2Steps); fixRelative(data.g1Steps); fixRelative(data.g2Steps); return data; }
+    function fillWaferSummaryIni(ini,g,data){const p=g.toLowerCase();const s0=parts(iniGet(ini,`${g}_Recipe`,"Step0"));const steps=int(at(s0,6));const before=parts(iniGet(ini,`${g}_Wheel`,"BeforeGrd"));const after=parts(iniGet(ini,`${g}_Wheel`,`AfterGrdStep${steps}`));data[`${p}TargetSV`]=num(at(s0,7));data[`${p}Income`]=num(at(before,12));data[`${p}LastWaferMin`]=num(at(before,11));data[`${p}TargetPV`]=num(at(after,11));}
+    function fillWaferStepsIni(ini,g,out){const steps=int(at(parts(iniGet(ini,`${g}_Recipe`,"Step0")),6));let prevEnd=0;for(let step=1;step<=steps;step++){const sec=ini[`${g}_Step${step}`];if(!sec)continue;const count=int(sec["0"]);let start=NaN;const offset=prevEnd;for(let k=1;k<=count;k++){const row=sec[String(k)];if(!row)continue;const c=csvSplit(row);const t=parseTimeSeconds(c[0]);if(!Number.isFinite(t))continue;if(!Number.isFinite(start))start=t;const rec=stepRecord(c,t-start+offset);prevEnd=rec.relativeSec;out.push(rec);}}}
+    function stepRecord(c, rel){return {relativeSec:rel,timestampSec:parseTimeSeconds(c[0]),waferMax:num(c[1]),waferMin:num(c[2]),waferOnline:num(c[3]),zmch:num(c[4]),zabs:num(c[5])*1000,s1Loading:num(c[7]),s2Loading:num(c[8]),zLoading:num(c[9]),zfeedrate:num(c[13])};}
+    function fixRelative(steps){if(!steps.length)return;const hasMs=steps.some(r=>Math.abs(r.timestampSec-Math.round(r.timestampSec))>.0001);if(hasMs)return;steps.forEach((r,i)=>r.relativeSec=i/9);}
+    async function parseWafer(file){const key=fileKey(file.name); if(state.waferCache.has(key)) return state.waferCache.get(key); const text=await readFileText(file); const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name); state.waferCache.set(key,data); return data;}
+    async function loadSingleWafer(file){if(!file)return; $("lblPath").textContent=file.name; const data=await parseWafer(file); $("txtSingleFile").value=file.name; drawLines($("chtSingleG1"), [{name:"S1 Loading",color:"g1",points:data.g1Steps.map(r=>({x:r.relativeSec,y:r.s1Loading}))}], "sec", "S1 Loading (%)", `G1 粗磨  S1 Loading  Chuck#${data.chuck||"-"}  Income=${fmt(data.g1Income,1)}um  結果:${data.g1Result||"-"}`); drawLines($("chtSingleG2"), [{name:"S1 Loading",color:"g2",points:data.g2Steps.map(r=>({x:r.relativeSec,y:r.s1Loading}))}], "sec", "S1 Loading (%)", `G2 細磨  S1 Loading  Chuck#${data.chuck||"-"}  Income=${fmt(data.g2Income,1)}um  結果:${data.g2Result||"-"}`); activateTab("single");}
+    async function loadWaferFromBatch(){ if(!state.records.length) return alert("請先載入批次資料。"); const n=int($("nudWaferNo").value); const f=findWaferFile(n); if(!f) return alert(`找不到 W${String(n).padStart(4,"0")} 檔案。`); await loadSingleWafer(f); }
+    function renderAISeed(){ const rows=state.records; const g1=okSeries("G1","g1Removal").map(p=>p.y), g2=okSeries("G2","g2Removal").map(p=>p.y); $("rtbAI").value = `批次摘要\\nWafers: ${rows.length}\\nG1 Removal Avg/Std: ${fmt(avg(g1))} / ${fmt(std(g1))} um\\nG2 Removal Avg/Std: ${fmt(avg(g2))} / ${fmt(std(g2))} um\\nG1 NG: ${rows.filter(r=>r.g1Result&&!r.g1OK).length}\\nG2 NG: ${rows.filter(r=>r.g2Result&&!r.g2OK).length}\\n\\n請按「產生 AI 建議」後，可複製此摘要到外部 AI 或使用瀏覽器允許的 API。`; }
 
-    function renderOverview() {
-      const i = state.info || {};
-      $("infoTable").innerHTML = kvTable([
-        ["Machine", i.machineModel], ["Serial", i.serialNumber], ["Lot ID", i.lotID],
-        ["Recipe", [i.recipeNumber, i.recipeName].filter(Boolean).join(" / ")],
-        ["Start", i.lotStartTime ? i.lotStartTime.toLocaleString() : "-"],
-        ["End", i.lotEndTime ? i.lotEndTime.toLocaleString() : "-"],
-        ["G1 Wheel", i.g1WheelID], ["G2 Wheel", i.g2WheelID],
-      ]);
-      $("fileSummary").innerHTML = [
-        ["ProcessLog", findFile("processlog.csv") || findFile("processlog.ini")],
-        ["WaferBatchLog", findFile("waferbatchlog.csv")],
-        ["W files", [...state.files.keys()].filter(n => /^w\d+\.(csv|ini)$/i.test(n)).length],
-        ["Mode", findFile("waferbatchlog.csv") ? "CSV batch" : "INI batch"],
-      ].map(([k, v]) => `<span class="chip">${k}: ${v ? (v.name || v) : "-"}</span>`).join("");
-      $("recordsTable").innerHTML = table(["Wafer", "Chuck", "G1", "G1 Rem.", "G1 S1", "G2", "G2 Rem.", "G2 S1", "G2 Thick"], state.records.map(r => [
-        r.wafer, r.g1Chuck || r.g2Chuck, r.g1Result, fmt(r.g1Removal), fmt(r.g1PeakS1, 1), r.g2Result, fmt(r.g2Removal), fmt(r.g2PeakS1, 1), fmt(r.g2LastWaferMin)
-      ]));
-      drawBar($("okChart"), [
-        { label: "G1 OK", value: state.records.filter(r => r.g1OK).length, color: "green" },
-        { label: "G1 NG", value: state.records.filter(r => r.g1Result && !r.g1OK).length, color: "red" },
-        { label: "G2 OK", value: state.records.filter(r => r.g2OK).length, color: "blue" },
-        { label: "G2 NG", value: state.records.filter(r => r.g2Result && !r.g2OK).length, color: "amber" },
-      ]);
-    }
+    const colorMap = { g1:"#0072bd", g2:"#2fa84f", c3:"#d95319", orange:"#b45014", purple:"#503c8c", red:"#c03030" };
+    function setupCanvas(canvas){const rect=canvas.getBoundingClientRect();const dpr=window.devicePixelRatio||1;canvas.width=Math.max(320,Math.floor(rect.width*dpr));canvas.height=Math.max(220,Math.floor(rect.height*dpr));const ctx=canvas.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w:rect.width,h:rect.height};}
+    function drawLines(canvas, series, xLabel, yLabel, title){const {ctx,w,h}=setupCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.font="13px Microsoft JhengHei UI, Arial";ctx.fillStyle="#222";ctx.fillText(title||"",12,18);const pad={l:55,r:20,t:38,b:38};const pts=series.flatMap(s=>s.points||[]).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));ctx.strokeStyle="#d9e0e8";ctx.lineWidth=1;for(let i=0;i<=5;i++){const y=pad.t+i*((h-pad.t-pad.b)/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}ctx.strokeStyle="#777";ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();ctx.fillStyle="#606a76";ctx.font="12px Consolas, monospace";ctx.fillText(yLabel||"",8,34);ctx.fillText(xLabel||"",w-58,h-10);if(!pts.length){ctx.fillText("No data",w/2-24,h/2);return;}const xMin=min(pts.map(p=>p.x)),xMax=max(pts.map(p=>p.x));let yMin=min(pts.map(p=>p.y)),yMax=max(pts.map(p=>p.y));const yp=(yMax-yMin||1)*.08;yMin-=yp;yMax+=yp;const sx=x=>pad.l+((x-xMin)/(xMax-xMin||1))*(w-pad.l-pad.r);const sy=y=>h-pad.b-((y-yMin)/(yMax-yMin||1))*(h-pad.t-pad.b);ctx.fillText(fmt(yMax),8,pad.t+4);ctx.fillText(fmt(yMin),8,h-pad.b);series.forEach((s,i)=>{const c=colorMap[s.color]||s.color||"#0072bd";const p=(s.points||[]).filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y));ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();p.forEach((pt,j)=>j?ctx.lineTo(sx(pt.x),sy(pt.y)):ctx.moveTo(sx(pt.x),sy(pt.y)));ctx.stroke();ctx.fillStyle=c;ctx.fillText(s.name,pad.l+i*115,32);});}
+    function quantile(values,q){if(!values.length)return NaN;const a=[...values].sort((x,y)=>x-y);const pos=(a.length-1)*q,base=Math.floor(pos),rest=pos-base;return a[base+1]!=null?a[base]+rest*(a[base+1]-a[base]):a[base];}
+    function drawBox(canvas, groups, title){const {ctx,w,h}=setupCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.font="13px Microsoft JhengHei UI, Arial";ctx.fillStyle="#222";ctx.fillText(title,12,18);const pad={l:50,r:20,t:38,b:72};const all=groups.flatMap(g=>g.values);ctx.strokeStyle="#d9e0e8";for(let i=0;i<=5;i++){const y=pad.t+i*((h-pad.t-pad.b)/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}if(!all.length){ctx.fillText("No data",w/2-24,h/2);return;}const yMin=min(all),yMax=max(all);const sy=y=>h-pad.b-((y-yMin)/(yMax-yMin||1))*(h-pad.t-pad.b);const slot=(w-pad.l-pad.r)/groups.length;groups.forEach((g,i)=>{const v=g.values;if(!v.length)return;const q1=quantile(v,.25),q2=quantile(v,.5),q3=quantile(v,.75),lo=min(v),hi=max(v),m=avg(v);const x=pad.l+i*slot+slot/2;ctx.strokeStyle="#0072bd";ctx.fillStyle="rgba(0,114,189,.12)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,sy(lo));ctx.lineTo(x,sy(hi));ctx.stroke();ctx.fillRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeStyle="#c03030";ctx.beginPath();ctx.moveTo(x-slot*.25,sy(q2));ctx.lineTo(x+slot*.25,sy(q2));ctx.stroke();ctx.fillStyle="#2fa84f";ctx.beginPath();ctx.arc(x,sy(m),3,0,Math.PI*2);ctx.fill();ctx.save();ctx.translate(x-12,h-15);ctx.rotate(-Math.PI/4);ctx.fillStyle="#606a76";ctx.font="11px Consolas, monospace";ctx.fillText(g.label,0,0);ctx.restore();});}
 
-    function renderParams() {
-      const i = state.info || {};
-      const rows = [
-        ["砂輪", i.g1WheelID, i.g2WheelID],
-        ["砂輪轉速 (rpm)", i.g1SpindleSpeed, i.g2SpindleSpeed],
-        ["工件轉速 (rpm)", i.g1WorkpieceSpeed, i.g2WorkpieceSpeed],
-        ["速差比", i.g1WorkpieceSpeed ? i.g1SpindleSpeed / i.g1WorkpieceSpeed : 0, i.g2WorkpieceSpeed ? i.g2SpindleSpeed / i.g2WorkpieceSpeed : 0],
-        ["Air cut (um)", i.g1AirCut, i.g2AirCut],
-        ["Remove Step1 (um)", i.g1RemoveValue1, i.g2RemoveValue1],
-        ["Feed Step1 (um/s)", i.g1FeedRate1, i.g2FeedRate1],
-        ["Remove Step2 (um)", i.g1RemoveValue2, i.g2RemoveValue2],
-        ["Feed Step2 (um/s)", i.g1FeedRate2, i.g2FeedRate2],
-        ["Spark out (sec)", i.g1SparkOut, i.g2SparkOut],
-        ["Final target (um)", i.g1FinalTarget, i.g2FinalTarget],
-        ["pcs Grind", i.g1PcsGrind, i.g2PcsGrind],
-        ["Avg Wear (um)", i.g1AvgWear, i.g2AvgWear],
-      ];
-      $("paramsTable").innerHTML = table(["Parameter", "G1 Rough", "G2 Fine"], rows.map(r => [r[0], fmt(Number(r[1]), 4) || r[1], fmt(Number(r[2]), 4) || r[2]]));
-    }
+    function activateTab(id){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));setTimeout(()=>{renderAll(); if(id==="loadseq") renderSeq(); if(id==="loadpar") renderPar();},25);}
+    function applyLanguage(lang){state.lang=lang;const l=tr[lang];$("btnBatch").textContent=l.btnBatch;$("btnWafer").textContent=l.btnWafer;$("btnPPT").textContent=l.btnPPT;document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=l.tabs[i]);document.querySelector('[data-sub="singleG1"]').textContent=l.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=l.singleG2;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;if($("lblPath").textContent==="尚未載入"||$("lblPath").textContent==="尚未载入"||$("lblPath").textContent==="Not loaded")$("lblPath").textContent=l.notLoaded;$("btnSaveKey").textContent=l.saveKey;$("btnGenAI").textContent=l.genAI;$("lblAIStatus").textContent=l.ready;renderAll();}
+    function exportPptx(){if(!state.records.length)return;const slides=buildPptSlides();const files=makePptxFiles(slides);const blob=new Blob([zipStore(files)],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});downloadBlob(blob,`FSG2300_Analysis_${new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)}.pptx`);}
+    function buildPptSlides(){const i=state.info||{};const g1=okSeries("G1","g1Removal").map(p=>p.y),g2=okSeries("G2","g2Removal").map(p=>p.y);const slides=[
+      {title:"FSG2300 Log Analysis",lines:[`Machine: ${i.machineModel||""}    SN: ${i.serialNumber||""}`,`Recipe: ${i.recipeNumber||""} ${i.recipeName||""}`,`Wafers: ${state.records.length}    NG(G1/G2): ${state.records.filter(r=>r.g1Result&&!r.g1OK).length}/${state.records.filter(r=>r.g2Result&&!r.g2OK).length}`,`G1 Removal Avg/Std: ${fmt(avg(g1))} / ${fmt(std(g1))} um`,`G2 Removal Avg/Std: ${fmt(avg(g2))} / ${fmt(std(g2))} um`]},
+      {title:"加工參數",lines:paramLines()},
+      {title:"移除量",images:[pptChart(c=>renderRemovalChartOnly(c))],lines:removalStatLines()},
+      {title:"抬針後移除量",images:[pptChart(c=>drawLines(c,[{name:"G1",color:"g1",points:okSeries("G1","g1PostLift")},{name:"G2",color:"g2",points:okSeries("G2","g2PostLift")}],"晶片序號","移除量 (um)","G1/G2 抬針後移除量（OK 片）"))]},
+      {title:"負載狀況",images:[pptChart(c=>drawLines(c,chuckSeries("g1",[1,2,3]),"Wafer#","S1 Loading (%)","G1 粗磨  S1 Peak (%)")),pptChart(c=>drawLines(c,chuckSeries("g2",[1,2,3]),"Wafer#","S1 Loading (%)","G2 細磨  S1 Peak (%)"))]},
+      {title:"負載分布",images:[pptChart(c=>{const groups=[];for(const g of["g1","g2"])for(const ch of[1,2,3])groups.push({label:`${g.toUpperCase()} C${ch}`,values:state.records.filter(r=>r[`${g}OK`]&&r[`${g}Chuck`]===ch).map(r=>r[`${g}PeakS1`]).filter(Number.isFinite)});drawBox(c,groups,"G1/G2 各 Chuck  S1 Peak 分布（Q1/Q3 箱線圖）");})]},
+      {title:"加工時間",images:[pptChart(c=>drawLines(c,[{name:"G1 加工秒",color:"g1",points:okSeries("G1","g1Sec")},{name:"G2 加工秒",color:"g2",points:okSeries("G2","g2Sec")},{name:"G1 等待時間",color:"orange",points:state.records.map(r=>({x:r.wafer,y:r.waitG1||0}))},{name:"G2 等待時間",color:"purple",points:state.records.map(r=>({x:r.wafer,y:r.waitG2||0}))}],"晶片序號","加工時間 (秒)","加工時間 / 等待時間（OK 片）"))]},
+      {title:"平均磨耗",images:[pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G1");drawLines(c,[{name:"Per-wafer Rate",color:"g1",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G1 平均磨耗率（全批次）");}),pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G2");drawLines(c,[{name:"Per-wafer Rate",color:"g2",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G2 平均磨耗率（全批次）");})]},
+      {title:"成品厚度",images:[pptChart(c=>drawLines(c,[{name:"G1 研磨後厚度",color:"g1",points:okSeries("G1","g1LastWaferMin")},{name:"G2 成品厚度",color:"g2",points:okSeries("G2","g2LastWaferMin")}],"晶片序號","厚度 (um)","G1 研磨後 / G2 成品厚度（OK 片）"))]}
+    ];if(state.seqLoaded){slides.splice(6,0,{title:"負載時序串聯",images:[pptChart(c=>drawLines(c,sequenceSeries("g1",20),"sec","S1 Loading (%)","G1 粗磨  S1 Loading 時序串聯")),pptChart(c=>drawLines(c,sequenceSeries("g2",20),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序串聯"))]},{title:"負載時序並聯",images:[pptChart(c=>drawLines(c,parallelSeries("g1",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G1 粗磨  S1 Loading 時序並聯")),pptChart(c=>drawLines(c,parallelSeries("g2",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序並聯"))]});}return slides;}
+    function renderRemovalChartOnly(c){drawLines(c,[{name:"G1 粗磨",color:"g1",points:okSeries("G1","g1Removal")},{name:"G2 細磨",color:"g2",points:okSeries("G2","g2Removal")}],"晶片序號","移除量 (um)","G1/G2 移除量（OK 片）");}
+    function paramLines(){const i=state.info||{};return [["砂輪",i.g1WheelID,i.g2WheelID],["砂輪轉速 (rpm)",i.g1SpindleSpeed,i.g2SpindleSpeed],["工件轉速 (rpm)",i.g1WorkpieceSpeed,i.g2WorkpieceSpeed],["Air cut (um)",i.g1AirCut,i.g2AirCut],["移除量 Step1 (um)",i.g1RemoveValue1,i.g2RemoveValue1],["進給速率 Step1 (um/s)",i.g1FeedRate1,i.g2FeedRate1],["移除量 Step2 (um)",i.g1RemoveValue2,i.g2RemoveValue2],["進給速率 Step2 (um/s)",i.g1FeedRate2,i.g2FeedRate2],["Spark out (sec)",i.g1SparkOut,i.g2SparkOut],["最終目標 (um)",i.g1FinalTarget,i.g2FinalTarget],["平均磨耗 (um)",i.g1AvgWear,i.g2AvgWear],["UPH",i.g1UPH||"",i.g2UPH||""]].map(r=>`${r[0]}    G1:${typeof r[1]==="number"?fmt(r[1],4):r[1]??"-"}    G2:${typeof r[2]==="number"?fmt(r[2],4):r[2]??"-"}`);}
+    function removalStatLines(){const rows=[statRow("G1",okSeries("G1","g1Removal").map(p=>p.y)),statRow("G2",okSeries("G2","g2Removal").map(p=>p.y))];return rows.map(r=>`${r[0]}  Avg:${r[1]}  Std:${r[2]}  Max:${r[3]}  Min:${r[4]}  N:${r[5]}`);}
+    function pptChart(drawer){const c=document.createElement("canvas");c.getBoundingClientRect=()=>({width:1280,height:720});drawer(c);return dataUriBytes(c.toDataURL("image/png"));}
+    function dataUriBytes(uri){const bin=atob(uri.split(",")[1]);const out=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)out[i]=bin.charCodeAt(i);return out;}
+    function downloadBlob(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),500);}
 
-    function okSeries(g, key) {
-      const p = g.toLowerCase();
-      return state.records.filter(r => r[`${p}OK`] && Number.isFinite(r[key])).map(r => ({ x: r.wafer, y: r[key] }));
-    }
+    const pptCx=12192000,pptCy=6858000;
+    function makePptxFiles(slides){const files=[];const imageMap=[];slides.forEach((s,si)=>(s.images||[]).forEach(img=>imageMap.push({slide:si+1,data:img,name:`image${imageMap.length+1}.png`})));files.push(["[Content_Types].xml",contentTypes(slides.length,imageMap.length)],["_rels/.rels",packageRels()],["docProps/app.xml",appXml(slides.length)],["docProps/core.xml",coreXml()],["ppt/presentation.xml",presentationXml(slides.length)],["ppt/_rels/presentation.xml.rels",presentationRels(slides.length)],["ppt/slideMasters/slideMaster1.xml",slideMasterXml()],["ppt/slideMasters/_rels/slideMaster1.xml.rels",slideMasterRels()],["ppt/slideLayouts/slideLayout1.xml",slideLayoutXml()],["ppt/slideLayouts/_rels/slideLayout1.xml.rels",slideLayoutRels()],["ppt/theme/theme1.xml",themeXml()]);slides.forEach((s,i)=>{const imgs=imageMap.filter(x=>x.slide===i+1);files.push([`ppt/slides/slide${i+1}.xml`,slideXml(s,i+1,imgs)]);files.push([`ppt/slides/_rels/slide${i+1}.xml.rels`,slideRels(imgs)]);});imageMap.forEach(img=>files.push([`ppt/media/${img.name}`,img.data]));return files;}
+    function contentTypes(n,m){let o=`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/><Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/><Override PartName="/ppt/slideLayouts/slideLayout1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/><Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>`;for(let i=1;i<=n;i++)o+=`<Override PartName="/ppt/slides/slide${i}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;return o+`</Types>`;}
+    function packageRels(){return `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>`;}
+    function appXml(n){return `<?xml version="1.0" encoding="UTF-8"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>FSG2300 Log Analysis Web</Application><PresentationFormat>On-screen Show (16:9)</PresentationFormat><Slides>${n}</Slides></Properties>`;}
+    function coreXml(){const d=new Date().toISOString();return `<?xml version="1.0" encoding="UTF-8"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>FSG2300 Log Analysis</dc:title><dc:creator>FSG2300 Log Analysis Web</dc:creator><cp:lastModifiedBy>FSG2300 Log Analysis Web</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${d}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${d}</dcterms:modified></cp:coreProperties>`;}
+    function presentationXml(n){let ids="";for(let i=1;i<=n;i++)ids+=`<p:sldId id="${255+i}" r:id="rId${i}"/>`;return `<?xml version="1.0" encoding="UTF-8"?><p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rIdMaster"/></p:sldMasterIdLst><p:sldIdLst>${ids}</p:sldIdLst><p:sldSz cx="${pptCx}" cy="${pptCy}" type="wide"/><p:notesSz cx="6858000" cy="9144000"/></p:presentation>`;}
+    function presentationRels(n){let r=`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;for(let i=1;i<=n;i++)r+=`<Relationship Id="rId${i}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${i}.xml"/>`;return r+`<Relationship Id="rIdMaster" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/></Relationships>`;}
+    function slideMasterXml(){return `<?xml version="1.0" encoding="UTF-8"?><p:sldMaster xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>${grpXml()}</p:spTree></p:cSld><p:clrMap bg1="lt1" tx1="dk1" bg2="lt2" tx2="dk2" accent1="accent1" accent2="accent2" accent3="accent3" accent4="accent4" accent5="accent5" accent6="accent6" hlink="hlink" folHlink="folHlink"/><p:sldLayoutIdLst><p:sldLayoutId id="1" r:id="rId1"/></p:sldLayoutIdLst></p:sldMaster>`;}
+    function slideMasterRels(){return `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="../theme/theme1.xml"/></Relationships>`;}
+    function slideLayoutXml(){return `<?xml version="1.0" encoding="UTF-8"?><p:sldLayout xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" type="blank" preserve="1"><p:cSld name="Blank"><p:spTree>${grpXml()}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;}
+    function slideLayoutRels(){return `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="../slideMasters/slideMaster1.xml"/></Relationships>`;}
+    function themeXml(){return `<?xml version="1.0" encoding="UTF-8"?><a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="FSG2300"><a:themeElements><a:clrScheme name="Office"><a:dk1><a:srgbClr val="20242A"/></a:dk1><a:lt1><a:srgbClr val="FFFFFF"/></a:lt1><a:dk2><a:srgbClr val="44546A"/></a:dk2><a:lt2><a:srgbClr val="E7E6E6"/></a:lt2><a:accent1><a:srgbClr val="0072BD"/></a:accent1><a:accent2><a:srgbClr val="2FA84F"/></a:accent2><a:accent3><a:srgbClr val="D95319"/></a:accent3><a:accent4><a:srgbClr val="503C8C"/></a:accent4><a:accent5><a:srgbClr val="B45014"/></a:accent5><a:accent6><a:srgbClr val="6B7A90"/></a:accent6><a:hlink><a:srgbClr val="0563C1"/></a:hlink><a:folHlink><a:srgbClr val="954F72"/></a:folHlink></a:clrScheme><a:fontScheme name="Office"><a:majorFont><a:latin typeface="Microsoft JhengHei"/></a:majorFont><a:minorFont><a:latin typeface="Microsoft JhengHei"/></a:minorFont></a:fontScheme><a:fmtScheme name="Office"><a:fillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:fillStyleLst><a:lnStyleLst><a:ln w="9525"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val="phClr"/></a:solidFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements></a:theme>`;}
+    function grpXml(){return `<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>`;}
+    function slideXml(slide,num,imgs){let body=grpXml()+textBox(2,420000,260000,11350000,520000,slide.title,2800,true);if(slide.lines&&slide.lines.length)body+=textBox(3,620000,980000,11000000,5200000,slide.lines.join("\n"),1550,false);if(imgs.length===1)body+=picXml(10,"rId1",640000,1000000,10900000,5550000);if(imgs.length===2){body+=picXml(10,"rId1",520000,980000,5600000,5050000);body+=picXml(11,"rId2",6100000,980000,5600000,5050000);}return `<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:bg><p:bgPr><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill><a:effectLst/></p:bgPr></p:bg><p:spTree>${body}</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sld>`;}
+    function textBox(id,x,y,cx,cy,text,sz,bold){return `<p:sp><p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr><p:txBody><a:bodyPr wrap="square"/><a:lstStyle/>${String(text).split("\n").slice(0,28).map(t=>`<a:p><a:r><a:rPr lang="zh-TW" sz="${sz}"${bold?' b="1"':""}/><a:t>${xml(t)}</a:t></a:r></a:p>`).join("")}</p:txBody></p:sp>`;}
+    function picXml(id,rid,x,y,cx,cy){return `<p:pic><p:nvPicPr><p:cNvPr id="${id}" name="Chart ${id}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${rid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${x}" y="${y}"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;}
+    function slideRels(imgs){let r=`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdLayout" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`;imgs.forEach((img,i)=>r+=`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${img.name}"/>`);return r+`</Relationships>`;}
+    function xml(s){return String(s??"").replace(/[<>&'"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;","'":"&apos;",'"':"&quot;"}[c]));}
+    function zipStore(entries){const te=new TextEncoder(),locals=[],centrals=[];let offset=0;for(const [name,data] of entries){const n=te.encode(name),b=typeof data==="string"?te.encode(data):data,crc=crc32(b),lh=new Uint8Array(30+n.length);const dv=new DataView(lh.buffer);dv.setUint32(0,0x04034b50,true);dv.setUint16(4,20,true);dv.setUint16(6,0x0800,true);dv.setUint16(8,0,true);dv.setUint32(14,crc,true);dv.setUint32(18,b.length,true);dv.setUint32(22,b.length,true);dv.setUint16(26,n.length,true);lh.set(n,30);locals.push(lh,b);const ch=new Uint8Array(46+n.length);const cdv=new DataView(ch.buffer);cdv.setUint32(0,0x02014b50,true);cdv.setUint16(4,20,true);cdv.setUint16(6,20,true);cdv.setUint16(8,0x0800,true);cdv.setUint16(10,0,true);cdv.setUint32(16,crc,true);cdv.setUint32(20,b.length,true);cdv.setUint32(24,b.length,true);cdv.setUint16(28,n.length,true);cdv.setUint32(42,offset,true);ch.set(n,46);centrals.push(ch);offset+=lh.length+b.length;}const centralSize=centrals.reduce((s,a)=>s+a.length,0),end=new Uint8Array(22);const edv=new DataView(end.buffer);edv.setUint32(0,0x06054b50,true);edv.setUint16(8,entries.length,true);edv.setUint16(10,entries.length,true);edv.setUint32(12,centralSize,true);edv.setUint32(16,offset,true);const total=offset+centralSize+22,out=new Uint8Array(total);let p=0;for(const a of locals){out.set(a,p);p+=a.length;}for(const a of centrals){out.set(a,p);p+=a.length;}out.set(end,p);return out;}
+    const crcTable=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+    function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
 
-    function renderRemoval() {
-      drawLines($("removalChart"), [
-        { name: "G1 Removal", color: "blue", points: okSeries("G1", "g1Removal") },
-        { name: "G2 Removal", color: "green", points: okSeries("G2", "g2Removal") },
-      ], { xLabel: "Wafer", yLabel: "um" });
-      drawLines($("postLiftChart"), [
-        { name: "G1 Post-lift", color: "blue", points: okSeries("G1", "g1PostLift") },
-        { name: "G2 Post-lift", color: "green", points: okSeries("G2", "g2PostLift") },
-      ], { xLabel: "Wafer", yLabel: "um" });
-      const rows = [
-        statRow("G1 Removal", okSeries("G1", "g1Removal").map(p => p.y)),
-        statRow("G2 Removal", okSeries("G2", "g2Removal").map(p => p.y)),
-        statRow("G1 Post-lift", okSeries("G1", "g1PostLift").map(p => p.y)),
-        statRow("G2 Post-lift", okSeries("G2", "g2PostLift").map(p => p.y)),
-      ];
-      $("removalStats").innerHTML = table(["項目", "平均", "標準差", "最大", "最小", "樣本"], rows);
-    }
-
-    function statRow(name, a) {
-      return [name, fmt(avg(a)), fmt(std(a)), fmt(max(a)), fmt(min(a)), a.length];
-    }
-
-    function renderLoading() {
-      drawLines($("loadingChart"), [
-        { name: "G1 S1 Peak", color: "blue", points: okSeries("G1", "g1PeakS1") },
-        { name: "G2 S1 Peak", color: "green", points: okSeries("G2", "g2PeakS1") },
-      ], { xLabel: "Wafer", yLabel: "%" });
-      const groups = [];
-      for (const g of ["g1", "g2"]) for (const chuck of [1, 2, 3]) {
-        groups.push({ label: `${g.toUpperCase()} C${chuck}`, values: state.records.filter(r => r[`${g}OK`] && r[`${g}Chuck`] === chuck).map(r => r[`${g}PeakS1`]).filter(Number.isFinite) });
-      }
-      drawBox($("loadingBoxChart"), groups);
-    }
-
-    function renderTime() {
-      drawLines($("timeChart"), [
-        { name: "G1 Process", color: "blue", points: okSeries("G1", "g1Sec") },
-        { name: "G2 Process", color: "green", points: okSeries("G2", "g2Sec") },
-      ], { xLabel: "Wafer", yLabel: "sec" });
-      drawLines($("waitChart"), [
-        { name: "G1 Wait", color: "amber", points: state.records.map(r => ({ x: r.wafer, y: r.waitG1 || 0 })) },
-        { name: "G2 Wait", color: "violet", points: state.records.map(r => ({ x: r.wafer, y: r.waitG2 || 0 })) },
-      ], { xLabel: "Wafer", yLabel: "sec" });
-    }
-
-    function renderWear() {
-      const wearRate = (g, recent = false) => {
-        const p = g.toLowerCase();
-        let rows = state.records.filter(r => r[`${p}OK`] && Math.abs(r[`${p}Removal`]) > 0);
-        if (recent) rows = rows.slice(-20);
-        return rows.map(r => ({ x: r.wafer, y: r[`${p}SWear`] / Math.abs(r[`${p}Removal`]) }));
-      };
-      drawLines($("wearChart"), [
-        { name: "G1 Wear Rate", color: "blue", points: wearRate("G1") },
-        { name: "G2 Wear Rate", color: "green", points: wearRate("G2") },
-      ], { xLabel: "Wafer", yLabel: "SWear / Removal" });
-      drawLines($("wearRecentChart"), [
-        { name: "G1 Recent", color: "blue", points: wearRate("G1", true) },
-        { name: "G2 Recent", color: "green", points: wearRate("G2", true) },
-      ], { xLabel: "Wafer", yLabel: "SWear / Removal" });
-    }
-
-    function renderThickness() {
-      drawLines($("thicknessChart"), [
-        { name: "G1 Post-grind", color: "blue", points: okSeries("G1", "g1LastWaferMin") },
-        { name: "G2 Final", color: "green", points: okSeries("G2", "g2LastWaferMin") },
-        { name: "G1 Target", color: "red", points: state.info?.g1FinalTarget ? state.records.map(r => ({ x: r.wafer, y: state.info.g1FinalTarget })) : [] },
-        { name: "G2 Target", color: "amber", points: state.info?.g2FinalTarget ? state.records.map(r => ({ x: r.wafer, y: state.info.g2FinalTarget })) : [] },
-      ], { xLabel: "Wafer", yLabel: "um" });
-    }
-
-    function renderSuggestions() {
-      const out = [];
-      const g1Load = okSeries("G1", "g1PeakS1").map(p => p.y);
-      const g2Load = okSeries("G2", "g2PeakS1").map(p => p.y);
-      const g2Thick = okSeries("G2", "g2LastWaferMin").map(p => p.y);
-      const g1Ng = state.records.filter(r => r.g1Result && !r.g1OK).length;
-      const g2Ng = state.records.filter(r => r.g2Result && !r.g2OK).length;
-      if (max(g1Load) > avg(g1Load) + 3 * std(g1Load)) out.push(["warn", "G1 負載有尖峰", "G1 S1 Peak 出現高於平均值 3 個標準差的點，建議檢查該片 Chuck、進給與砂輪狀態。"]);
-      if (max(g2Load) > avg(g2Load) + 3 * std(g2Load)) out.push(["warn", "G2 負載有尖峰", "G2 S1 Peak 出現高於平均值 3 個標準差的點，建議檢查細磨段負載與目標厚度設定。"]);
-      if (std(g2Thick) > 1) out.push(["warn", "成品厚度波動偏大", `G2 成品厚度標準差約 ${fmt(std(g2Thick), 2)} um，建議比對 TargetPV、LastWaferMin 與 Chuck 分布。`]);
-      if (g1Ng || g2Ng) out.push(["bad", "存在 NG 晶片", `目前 G1 NG=${g1Ng}、G2 NG=${g2Ng}，可先從晶片列表定位片號，再載入單片時序。`]);
-      if (!out.length) out.push(["good", "未見明顯異常", "依目前載入資料，負載、厚度與結果沒有觸發基本規則門檻。"]);
-      $("suggestions").innerHTML = out.map(([kind, h, p]) => `<article class="suggestion ${kind}"><h3>${h}</h3><p>${p}</p></article>`).join("");
-    }
-
-    async function parseWafer(file) {
-      const key = fileKey(file.name);
-      if (state.waferCache.has(key)) return state.waferCache.get(key);
-      const text = await readFileText(file);
-      const data = key.endsWith(".ini") ? parseWaferIniData(text, file.name) : parseWaferCsvData(text, file.name);
-      state.waferCache.set(key, data);
-      return data;
-    }
-
-    function parseWaferCsvData(text, fileName) {
-      const data = { fileName, waferNumber: int(fileKey(fileName).replace(/\D/g, "")), chuck: 0, g1Result: "", g2Result: "", g1Steps: [], g2Steps: [] };
-      let section = "", isG1 = true, inStep = false, start = NaN, offset = 0, prevEnd = 0;
-      for (const raw of text.split("\n")) {
-        const line = raw.trimEnd();
-        if (!line.trim()) continue;
-        if (/^\[.+\]$/.test(line.trim())) {
-          section = line.trim();
-          inStep = false; start = NaN; offset = prevEnd;
-          if (section.startsWith("[G1_Step")) isG1 = true;
-          if (section.startsWith("[G2_Step")) { if (isG1) prevEnd = 0; isG1 = false; offset = prevEnd; }
-          continue;
-        }
-        const c = csvSplit(line);
-        if (section === "[WaferInfo]") parseWaferInfoLine(c, data);
-        if (section.startsWith("[G1_Step") || section.startsWith("[G2_Step")) {
-          if (c[0] === "Time") { inStep = true; continue; }
-          if (!inStep || c.length <= 9) continue;
-          const t = parseTimeSeconds(c[0]);
-          if (!Number.isFinite(t)) continue;
-          if (!Number.isFinite(start)) start = t;
-          const rec = stepRecord(c, t - start + offset);
-          prevEnd = rec.relativeSec;
-          (isG1 ? data.g1Steps : data.g2Steps).push(rec);
-        }
-      }
-      fixRelative(data.g1Steps);
-      fixRelative(data.g2Steps);
-      return data;
-    }
-
-    function parseWaferInfoLine(c, data) {
-      if (c[0] === "ChuckNumber") return;
-      if (int(c[0]) && c.length >= 9) {
-        data.chuck = int(c[0]);
-        data.g1Result = c[1] || "";
-        data.g2Result = c[2] || "";
-      }
-      if (c[0] === "CassetteNumber") return;
-      if (int(c[0]) && c.length >= 3) data.waferNumber = int(c[2]);
-      if (c[0] === "G1") { data.g1Income = num(c[1]); data.g1TargetSV = num(c[2]); data.g1TargetPV = num(c[3]); data.g1LastWaferMin = num(c[5]); }
-      if (c[0] === "G2") { data.g2Income = num(c[1]); data.g2TargetSV = num(c[2]); data.g2TargetPV = num(c[3]); data.g2LastWaferMin = num(c[5]); }
-    }
-
-    function parseWaferIniData(text, fileName) {
-      const ini = parseIni(text);
-      const data = { fileName, waferNumber: int(fileKey(fileName).replace(/\D/g, "")), chuck: 0, g1Steps: [], g2Steps: [] };
-      const block = parts(iniGet(ini, "BlockInfo", "Data"));
-      data.chuck = int(at(block, 0));
-      data.g1Result = at(block, 1) === "0" ? "OK" : "NG";
-      data.g2Result = at(block, 2) === "0" ? "OK" : "NG";
-      data.waferNumber = int(at(parts(iniGet(ini, "BlockInfo", "Cassette")), 2)) || data.waferNumber;
-      fillWaferSummaryIni(ini, "G1", data);
-      fillWaferSummaryIni(ini, "G2", data);
-      fillWaferStepsIni(ini, "G1", data.g1Steps);
-      fillWaferStepsIni(ini, "G2", data.g2Steps);
-      fixRelative(data.g1Steps);
-      fixRelative(data.g2Steps);
-      return data;
-    }
-
-    function fillWaferSummaryIni(ini, g, data) {
-      const p = g.toLowerCase();
-      const s0 = parts(iniGet(ini, `${g}_Recipe`, "Step0"));
-      const steps = int(at(s0, 6));
-      const before = parts(iniGet(ini, `${g}_Wheel`, "BeforeGrd"));
-      const after = parts(iniGet(ini, `${g}_Wheel`, `AfterGrdStep${steps}`));
-      data[`${p}TargetSV`] = num(at(s0, 7));
-      data[`${p}Income`] = num(at(before, 12));
-      data[`${p}LastWaferMin`] = num(at(before, 11));
-      data[`${p}TargetPV`] = num(at(after, 11));
-    }
-
-    function fillWaferStepsIni(ini, g, out) {
-      const steps = int(at(parts(iniGet(ini, `${g}_Recipe`, "Step0")), 6));
-      let prevEnd = 0;
-      for (let step = 1; step <= steps; step++) {
-        const sec = ini[`${g}_Step${step}`];
-        if (!sec) continue;
-        const count = int(sec["0"]);
-        let start = NaN;
-        const offset = prevEnd;
-        for (let k = 1; k <= count; k++) {
-          const row = sec[String(k)];
-          if (!row) continue;
-          const c = csvSplit(row);
-          const t = parseTimeSeconds(c[0]);
-          if (!Number.isFinite(t)) continue;
-          if (!Number.isFinite(start)) start = t;
-          const rec = stepRecord(c, t - start + offset);
-          prevEnd = rec.relativeSec;
-          out.push(rec);
-        }
-      }
-    }
-
-    function stepRecord(c, rel) {
-      return {
-        relativeSec: rel,
-        timestampSec: parseTimeSeconds(c[0]),
-        waferMax: num(c[1]),
-        waferMin: num(c[2]),
-        waferOnline: num(c[3]),
-        zmch: num(c[4]),
-        zabs: num(c[5]) * 1000,
-        s1Loading: num(c[7]),
-        s2Loading: num(c[8]),
-        zLoading: num(c[9]),
-        zfeedrate: num(c[13]),
-      };
-    }
-
-    function fixRelative(steps) {
-      if (!steps.length) return;
-      const hasMs = steps.some(r => Math.abs(r.timestampSec - Math.round(r.timestampSec)) > 0.0001);
-      if (hasMs) return;
-      steps.forEach((r, i) => r.relativeSec = i / 9);
-    }
-
-    async function loadSingleWafer(file) {
-      if (!file) {
-        setStatus("請選取 W*.csv 或 W*.ini 單片檔案。", "err");
-        return;
-      }
-      setStatus(`正在解析 ${file.name}...`);
-      const data = await parseWafer(file);
-      $("singleMeta").textContent = `${data.fileName} / Wafer ${data.waferNumber || "-"} / Chuck ${data.chuck || "-"}`;
-      drawLines($("singleChart"), [
-        { name: "G1 S1 Loading", color: "blue", points: data.g1Steps.map(r => ({ x: r.relativeSec, y: r.s1Loading })) },
-        { name: "G2 S1 Loading", color: "green", points: data.g2Steps.map(r => ({ x: r.relativeSec, y: r.s1Loading })) },
-      ], { xLabel: "sec", yLabel: "S1 Loading %" });
-      activateTab("single");
-      setStatus(`已載入單片 ${data.fileName}。`, "ok");
-    }
-
-    function table(headers, rows) {
-      return `<table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c ?? "-"}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
-    }
-
-    const colors = { blue: "#0b66c3", green: "#16805f", red: "#b54040", amber: "#c78b24", teal: "#147c91", violet: "#6f4aa1" };
-
-    function setupCanvas(canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = Math.max(320, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(220, Math.floor(rect.height * dpr));
-      const ctx = canvas.getContext("2d");
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return { ctx, w: rect.width, h: rect.height };
-    }
-
-    function drawAxes(ctx, w, h, pad, yLabel) {
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "#dbe2ea";
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= 4; i++) {
-        const y = pad.t + i * ((h - pad.t - pad.b) / 4);
-        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
-      }
-      ctx.fillStyle = "#637184";
-      ctx.font = "12px Microsoft JhengHei, Arial";
-      ctx.fillText(yLabel || "", 10, 18);
-    }
-
-    function drawLines(canvas, series, options = {}) {
-      const { ctx, w, h } = setupCanvas(canvas);
-      const pad = { l: 48, r: 18, t: 34, b: 34 };
-      const points = series.flatMap(s => s.points || []).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-      drawAxes(ctx, w, h, pad, options.yLabel);
-      if (!points.length) { drawNoData(ctx, w, h); return; }
-      const xMin = min(points.map(p => p.x)), xMax = max(points.map(p => p.x));
-      const yMin0 = min(points.map(p => p.y)), yMax0 = max(points.map(p => p.y));
-      const yPad = (yMax0 - yMin0 || 1) * 0.08;
-      const yMin = yMin0 - yPad, yMax = yMax0 + yPad;
-      const sx = x => pad.l + ((x - xMin) / (xMax - xMin || 1)) * (w - pad.l - pad.r);
-      const sy = y => h - pad.b - ((y - yMin) / (yMax - yMin || 1)) * (h - pad.t - pad.b);
-      ctx.fillStyle = "#637184";
-      ctx.font = "12px Microsoft JhengHei, Arial";
-      ctx.fillText(fmt(yMax), 8, pad.t + 4);
-      ctx.fillText(fmt(yMin), 8, h - pad.b);
-      ctx.fillText(options.xLabel || "", w - 52, h - 9);
-      series.forEach((s, index) => {
-        const pts = (s.points || []).filter(p => Number.isFinite(p.x) && Number.isFinite(p.y));
-        ctx.strokeStyle = colors[s.color] || s.color || colors.blue;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        pts.forEach((p, i) => { if (i) ctx.lineTo(sx(p.x), sy(p.y)); else ctx.moveTo(sx(p.x), sy(p.y)); });
-        ctx.stroke();
-        ctx.fillStyle = ctx.strokeStyle;
-        ctx.fillText(s.name, pad.l + index * 128, 18);
-      });
-    }
-
-    function drawBar(canvas, data) {
-      const { ctx, w, h } = setupCanvas(canvas);
-      const pad = { l: 42, r: 18, t: 28, b: 42 };
-      drawAxes(ctx, w, h, pad, "Count");
-      const mx = Math.max(1, ...data.map(d => d.value));
-      const bw = (w - pad.l - pad.r) / data.length * 0.62;
-      data.forEach((d, i) => {
-        const x = pad.l + (i + .5) * ((w - pad.l - pad.r) / data.length) - bw / 2;
-        const bh = d.value / mx * (h - pad.t - pad.b);
-        ctx.fillStyle = colors[d.color] || colors.blue;
-        ctx.fillRect(x, h - pad.b - bh, bw, bh);
-        ctx.fillStyle = "#202936";
-        ctx.font = "12px Microsoft JhengHei, Arial";
-        ctx.fillText(d.label, x - 8, h - 16);
-        ctx.fillText(String(d.value), x + bw / 2 - 5, h - pad.b - bh - 6);
-      });
-    }
-
-    function quantile(values, q) {
-      if (!values.length) return NaN;
-      const a = [...values].sort((x, y) => x - y);
-      const pos = (a.length - 1) * q;
-      const base = Math.floor(pos), rest = pos - base;
-      return a[base + 1] != null ? a[base] + rest * (a[base + 1] - a[base]) : a[base];
-    }
-
-    function drawBox(canvas, groups) {
-      const { ctx, w, h } = setupCanvas(canvas);
-      const pad = { l: 46, r: 18, t: 28, b: 70 };
-      const all = groups.flatMap(g => g.values);
-      drawAxes(ctx, w, h, pad, "S1 Peak %");
-      if (!all.length) { drawNoData(ctx, w, h); return; }
-      const yMin = min(all), yMax = max(all);
-      const sy = y => h - pad.b - ((y - yMin) / (yMax - yMin || 1)) * (h - pad.t - pad.b);
-      const slot = (w - pad.l - pad.r) / groups.length;
-      groups.forEach((g, i) => {
-        const v = g.values;
-        if (!v.length) return;
-        const q1 = quantile(v, .25), q2 = quantile(v, .5), q3 = quantile(v, .75);
-        const lo = min(v), hi = max(v), m = avg(v);
-        const x = pad.l + i * slot + slot / 2;
-        ctx.strokeStyle = colors.blue; ctx.fillStyle = "rgba(11,102,195,.12)"; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(x, sy(lo)); ctx.lineTo(x, sy(hi)); ctx.stroke();
-        ctx.fillRect(x - slot * .28, sy(q3), slot * .56, Math.max(2, sy(q1) - sy(q3)));
-        ctx.strokeRect(x - slot * .28, sy(q3), slot * .56, Math.max(2, sy(q1) - sy(q3)));
-        ctx.strokeStyle = colors.red; ctx.beginPath(); ctx.moveTo(x - slot * .28, sy(q2)); ctx.lineTo(x + slot * .28, sy(q2)); ctx.stroke();
-        ctx.fillStyle = colors.green; ctx.beginPath(); ctx.arc(x, sy(m), 3, 0, Math.PI * 2); ctx.fill();
-        ctx.save(); ctx.translate(x - 12, h - 16); ctx.rotate(-Math.PI / 4); ctx.fillStyle = "#637184"; ctx.font = "11px Microsoft JhengHei, Arial"; ctx.fillText(g.label, 0, 0); ctx.restore();
-      });
-    }
-
-    function drawNoData(ctx, w, h) {
-      ctx.fillStyle = "#637184";
-      ctx.font = "15px Microsoft JhengHei, Arial";
-      ctx.fillText("No data", w / 2 - 28, h / 2);
-    }
-
-    function activateTab(id) {
-      document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.tab === id));
-      document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === id));
-      setTimeout(renderAll, 30);
-    }
-
-    function downloadSummaryCsv() {
-      if (!state.records.length) return;
-      const rows = [["Wafer", "Chuck", "G1_Result", "G1_Removal", "G1_PeakS1", "G2_Result", "G2_Removal", "G2_PeakS1", "G2_FinalThickness"]];
-      state.records.forEach(r => rows.push([r.wafer, r.g1Chuck || r.g2Chuck, r.g1Result, fmt(r.g1Removal), fmt(r.g1PeakS1), r.g2Result, fmt(r.g2Removal), fmt(r.g2PeakS1), fmt(r.g2LastWaferMin)]));
-      const blob = new Blob(["\ufeff" + rows.map(r => r.join(",")).join("\n")], { type: "text/csv;charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "FSG2300_Web_Summary.csv";
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    $("folderInput").addEventListener("change", async e => {
-      try {
-        setStatus("正在讀取資料夾...");
-        await loadBatchFromFiles([...e.target.files]);
-      } catch (err) {
-        console.error(err);
-        setStatus(err.message || String(err), "err");
-      }
-    });
-    $("singleFileInput").addEventListener("change", e => loadSingleWafer(e.target.files[0]).catch(err => setStatus(err.message || String(err), "err")));
-    $("downloadCsvBtn").addEventListener("click", downloadSummaryCsv);
-    $("printBtn").addEventListener("click", () => window.print());
-    document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => activateTab(b.dataset.tab)));
-    window.addEventListener("resize", () => { if (state.records.length) renderAll(); });
+    $("btnBatch").addEventListener("click", ()=>$("folderInput").click());
+    $("btnWafer").addEventListener("click", ()=>$("singleFileInput").click());
+    $("btnPPT").addEventListener("click", exportPptx);
+    $("btnAbout").addEventListener("click", ()=>alert("FSG2300 Log Analysis Web\\nCSV / INI batch analysis and single wafer charting."));
+    $("folderInput").addEventListener("change", async e=>{try{$("lblPath").textContent="Loading...";await loadBatchFromFiles([...e.target.files]);}catch(err){alert(err.message||String(err));$("lblPath").textContent=tr[state.lang].notLoaded;}});
+    $("singleFileInput").addEventListener("change", e=>loadSingleWafer(e.target.files[0]).catch(err=>alert(err.message||String(err))));
+    $("btnOpenSingle").addEventListener("click", ()=>$("singleFileInput").click());
+    $("btnLoadWafer").addEventListener("click", ()=>loadWaferFromBatch().catch(err=>alert(err.message||String(err))));
+    document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>activateTab(b.dataset.tab)));
+    document.querySelectorAll(".subtab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".subtab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".subpage").forEach(p=>p.classList.toggle("active",p.id===b.dataset.sub));}));
+    ["chkLoadChuck1","chkLoadChuck2","chkLoadChuck3","chkLoadOverall","chkThickG1","chkThickG2"].forEach(id=>$(id).addEventListener("change",renderAll));
+    document.querySelectorAll(".chkPar").forEach(x=>x.addEventListener("change",renderPar));
+    $("chkParSmooth").addEventListener("change",renderPar);
+    $("btnLangZhTW").addEventListener("click",()=>applyLanguage("tw"));
+    $("btnLangZhCN").addEventListener("click",()=>applyLanguage("cn"));
+    $("btnLangEn").addEventListener("click",()=>applyLanguage("en"));
+    $("btnSaveKey").addEventListener("click",()=>$("lblAIStatus").textContent="完成");
+    $("btnGenAI").addEventListener("click",()=>{renderAISeed();$("lblAIStatus").textContent="完成";});
+    window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();});
   </script>
 </body>
 </html>
