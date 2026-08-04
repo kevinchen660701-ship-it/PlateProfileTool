@@ -258,10 +258,6 @@
         <h2>載入批次資料</h2>
         <input id="folderInput" class="filepick" type="file" webkitdirectory directory multiple>
         <p class="hint">選取含 ProcessLog / WaferBatchLog / W0001... 的資料夾。資料只在瀏覽器本機解析，不會上傳。</p>
-        <div class="row">
-          <button id="loadDemoBtn">載入範例</button>
-          <button id="clearBtn">清除</button>
-        </div>
       </section>
 
       <section class="block">
@@ -277,11 +273,7 @@
 
       <section class="block">
         <h2>單片分析</h2>
-        <div class="row">
-          <input id="waferNo" type="number" min="1" value="1" aria-label="Wafer number">
-          <button id="loadWaferBtn" class="primary">載入</button>
-        </div>
-        <p class="hint">輸入 Wafer 編號，會優先找 W0001.csv，找不到時找 W0001.ini。</p>
+        <input id="singleFileInput" class="filepick" type="file" accept=".csv,.ini">
       </section>
 
       <section class="block">
@@ -1023,14 +1015,14 @@
       steps.forEach((r, i) => r.relativeSec = i / 9);
     }
 
-    async function loadSingleWafer() {
-      if (!state.records.length) { setStatus("請先載入批次資料。", "err"); return; }
-      const n = int($("waferNo").value);
-      const file = findWaferFile(n);
-      if (!file) { setStatus(`找不到 W${String(n).padStart(4, "0")} 檔案。`, "err"); return; }
+    async function loadSingleWafer(file) {
+      if (!file) {
+        setStatus("請選取 W*.csv 或 W*.ini 單片檔案。", "err");
+        return;
+      }
       setStatus(`正在解析 ${file.name}...`);
       const data = await parseWafer(file);
-      $("singleMeta").textContent = `${data.fileName} / Wafer ${data.waferNumber || n} / Chuck ${data.chuck || "-"}`;
+      $("singleMeta").textContent = `${data.fileName} / Wafer ${data.waferNumber || "-"} / Chuck ${data.chuck || "-"}`;
       drawLines($("singleChart"), [
         { name: "G1 S1 Loading", color: "blue", points: data.g1Steps.map(r => ({ x: r.relativeSec, y: r.s1Loading })) },
         { name: "G2 S1 Loading", color: "green", points: data.g2Steps.map(r => ({ x: r.relativeSec, y: r.s1Loading })) },
@@ -1183,11 +1175,9 @@
         setStatus(err.message || String(err), "err");
       }
     });
-    $("loadWaferBtn").addEventListener("click", () => loadSingleWafer().catch(err => setStatus(err.message || String(err), "err")));
+    $("singleFileInput").addEventListener("change", e => loadSingleWafer(e.target.files[0]).catch(err => setStatus(err.message || String(err), "err")));
     $("downloadCsvBtn").addEventListener("click", downloadSummaryCsv);
     $("printBtn").addEventListener("click", () => window.print());
-    $("clearBtn").addEventListener("click", () => location.reload());
-    $("loadDemoBtn").addEventListener("click", () => setStatus("GitHub Pages 不能直接讀取你電腦 D 槽範例資料，請用上方資料夾選擇器載入 LogCsv 或 LogIni。", "err"));
     document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => activateTab(b.dataset.tab)));
     window.addEventListener("resize", () => { if (state.records.length) renderAll(); });
   </script>
