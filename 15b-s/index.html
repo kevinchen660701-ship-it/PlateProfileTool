@@ -1385,11 +1385,15 @@
       el.plateDisk.style.transform = `translate(-50%, -50%) rotate(${state.plateAngle}deg)`;
       const platePixels = el.plateDisk.offsetWidth || 420;
       const sweepPx = platePixels * machineGeometry.jigSweep / machineGeometry.plateOD;
-      const sweepHz = clamp(jigRpm / 90, 0.08, 0.75);
+      const sweepHz = clamp(jigRpm / 180, 0.04, 0.38);
       const sweepPhase = now / 1000 * sweepHz * Math.PI * 2;
       jigHolders.forEach((holder, index) => {
         const sweepOffset = Math.sin(sweepPhase + index * 2.09) * sweepPx * jigActivity;
-        holder.style.transform = `translate(-50%, -50%) translateX(${sweepOffset.toFixed(1)}px)`;
+        if (index === 0) {
+          holder.style.transform = `translate(-50%, -50%) translateY(${sweepOffset.toFixed(1)}px)`;
+        } else {
+          holder.style.transform = `translate(-50%, -50%) translateX(${sweepOffset.toFixed(1)}px)`;
+        }
       });
       jigRotors.forEach((rotor, index) => {
         rotor.style.transform = `rotate(${state.jigAngle + index * 34}deg)`;
