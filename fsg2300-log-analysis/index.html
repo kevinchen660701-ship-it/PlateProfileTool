@@ -273,7 +273,7 @@
         <button class="tab" data-tab="loadseq">負載時序串聯</button>
         <button class="tab" data-tab="loadpar">負載時序並聯</button>
         <button class="tab" data-tab="time">加工時間</button>
-        <button class="tab" data-tab="wear">平均磨耗</button>
+        <button class="tab" data-tab="wear">平均磨耗率</button>
         <button class="tab" data-tab="thickness">成品厚度</button>
         <button class="tab" data-tab="single">單片分析</button>
         <button class="tab" data-tab="ai">優化建議</button>
@@ -362,13 +362,13 @@
     const tr = {
       tw: {
         btnBatch: "📁  批次分析", btnWafer: "📄  單片 Wafer", btnPPT: "📊  產出 PPT", notLoaded: "尚未載入",
-        tabs: ["加工參數","移除量","抬針後移除量","負載狀況","負載分布","負載時序串聯","負載時序並聯","加工時間","平均磨耗","成品厚度","單片分析","優化建議"],
+        tabs: ["加工參數","移除量","抬針後移除量","負載狀況","負載分布","負載時序串聯","負載時序並聯","加工時間","平均磨耗率","成品厚度","單片分析","優化建議"],
         waferNo: "晶片號碼：", singleG1: "G1  粗磨", singleG2: "G2  細磨", load: "從批次載入", browse: "瀏覽...", orOpen: "或直接開啟：",
         aiService: "AI 服務：", apiKey: "API Key：", saveKey: "儲存金鑰", genAI: "產生 AI 建議", ready: "就緒",
       },
       cn: {
         btnBatch: "📁  批量分析", btnWafer: "📄  单片 Wafer", btnPPT: "📊  产出 PPT", notLoaded: "尚未载入",
-        tabs: ["加工参数","移除量","抬针后移除量","负载状况","负载分布","负载时序串联","负载时序并联","加工时间","平均磨耗","成品厚度","单片分析","优化建议"],
+        tabs: ["加工参数","移除量","抬针后移除量","负载状况","负载分布","负载时序串联","负载时序并联","加工时间","平均磨耗率","成品厚度","单片分析","优化建议"],
         waferNo: "晶片號碼：", singleG1: "G1  粗磨", singleG2: "G2  细磨", load: "从批次载入", browse: "浏览...", orOpen: "或直接开启：",
         aiService: "AI 服务：", apiKey: "API Key：", saveKey: "保存密钥", genAI: "产生 AI 建议", ready: "就绪",
       },
@@ -512,7 +512,7 @@
       {title:"負載狀況",images:[pptChart(c=>drawLines(c,chuckSeries("g1",[1,2,3]),"Wafer#","S1 Loading (%)","G1 粗磨  S1 Peak (%)")),pptChart(c=>drawLines(c,chuckSeries("g2",[1,2,3]),"Wafer#","S1 Loading (%)","G2 細磨  S1 Peak (%)"))]},
       {title:"負載分布",images:[pptChart(c=>{const groups=[];for(const g of["g1","g2"])for(const ch of[1,2,3])groups.push({label:`${g.toUpperCase()} C${ch}`,values:state.records.filter(r=>r[`${g}OK`]&&r[`${g}Chuck`]===ch).map(r=>r[`${g}PeakS1`]).filter(Number.isFinite)});drawBox(c,groups,"G1/G2 各 Chuck  S1 Peak 分布（Q1/Q3 箱線圖）");})]},
       {title:"加工時間",images:[pptChart(c=>drawLines(c,[{name:"G1 加工秒",color:"g1",points:okSeries("G1","g1Sec")},{name:"G2 加工秒",color:"g2",points:okSeries("G2","g2Sec")},{name:"G1 等待時間",color:"orange",points:state.records.map(r=>({x:r.wafer,y:r.waitG1||0}))},{name:"G2 等待時間",color:"purple",points:state.records.map(r=>({x:r.wafer,y:r.waitG2||0}))}],"晶片序號","加工時間 (秒)","加工時間 / 等待時間（OK 片）"))]},
-      {title:"平均磨耗",images:[pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G1");drawLines(c,[{name:"Per-wafer Rate",color:"g1",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G1 平均磨耗率（全批次）");}),pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G2");drawLines(c,[{name:"Per-wafer Rate",color:"g2",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G2 平均磨耗率（全批次）");})]},
+      {title:"平均磨耗率",images:[pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G1");drawLines(c,[{name:"Per-wafer Rate",color:"g1",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G1 平均磨耗率（全批次）");}),pptChart(c=>{const wr=g=>{const p=g.toLowerCase();return state.records.filter(r=>r[`${p}OK`]&&Math.abs(r[`${p}Removal`])>0).map(r=>({x:r.wafer,y:r[`${p}SWear`]/Math.abs(r[`${p}Removal`])}));};const a=wr("G2");drawLines(c,[{name:"Per-wafer Rate",color:"g2",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G2 平均磨耗率（全批次）");})]},
       {title:"成品厚度",images:[pptChart(c=>drawLines(c,[{name:"G1 研磨後厚度",color:"g1",points:okSeries("G1","g1LastWaferMin")},{name:"G2 成品厚度",color:"g2",points:okSeries("G2","g2LastWaferMin")}],"晶片序號","厚度 (um)","G1 研磨後 / G2 成品厚度（OK 片）"))]}
     ];if(state.seqLoaded){slides.splice(6,0,{title:"負載時序串聯",images:[pptChart(c=>drawLines(c,sequenceSeries("g1",20),"sec","S1 Loading (%)","G1 粗磨  S1 Loading 時序串聯")),pptChart(c=>drawLines(c,sequenceSeries("g2",20),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序串聯"))]},{title:"負載時序並聯",images:[pptChart(c=>drawLines(c,parallelSeries("g1",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G1 粗磨  S1 Loading 時序並聯")),pptChart(c=>drawLines(c,parallelSeries("g2",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序並聯"))]});}return slides;}
     function renderRemovalChartOnly(c){drawLines(c,[{name:"G1 粗磨",color:"g1",points:okSeries("G1","g1Removal")},{name:"G2 細磨",color:"g2",points:okSeries("G2","g2Removal")}],"晶片序號","移除量 (um)","G1/G2 移除量（OK 片）");}
@@ -562,8 +562,8 @@
       {title:"負載時序串聯 - G2",images:[pptChart(c=>drawLines(c,sequenceSeries("g2",20),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序串聯"))]},
       {title:"負載時序並聯 - G1",images:[pptChart(c=>drawLines(c,parallelSeries("g1",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G1 粗磨  S1 Loading 時序並聯"))]},
       {title:"負載時序並聯 - G2",images:[pptChart(c=>drawLines(c,parallelSeries("g2",[1,2,3,4,5,6]),"sec","S1 Loading (%)","G2 細磨  S1 Loading 時序並聯"))]},
-      {title:"平均磨耗 - G1",subtitle:wearText,images:[pptChart(c=>{const a=wearRateSeries("g1");drawLines(c,[{name:"Per-wafer Rate",color:"g1",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G1 平均磨耗率（全批次）");})]},
-      {title:"平均磨耗 - G2",subtitle:wearText,images:[pptChart(c=>{const a=wearRateSeries("g2");drawLines(c,[{name:"Per-wafer Rate",color:"g2",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G2 平均磨耗率（全批次）");})]},
+      {title:"平均磨耗率 - G1",subtitle:wearText,images:[pptChart(c=>{const a=wearRateSeries("g1");drawLines(c,[{name:"Per-wafer Rate",color:"g1",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G1 平均磨耗率（全批次）");})]},
+      {title:"平均磨耗率 - G2",subtitle:wearText,images:[pptChart(c=>{const a=wearRateSeries("g2");drawLines(c,[{name:"Per-wafer Rate",color:"g2",points:a},{name:"平均",color:"orange",points:flatLine(a,avg(a.map(p=>p.y)))}],"Wafer#","磨耗率","G2 平均磨耗率（全批次）");})]},
       {title:"統計摘要",lines:statsLines(g1,g2)}
     ];const ai=$("rtbAI").value.trim();if(ai){chunkLines(ai.split(/\r?\n/),14).forEach((chunk,idx)=>slides.push({title:idx?`優化建議 (${idx+1})`:"優化建議",lines:chunk}));}return slides;}
     function loadingDistGroups(){const groups=[];for(const g of["g1","g2"])for(const c of[1,2,3])groups.push({label:`${g.toUpperCase()} C${c}`,values:state.records.filter(r=>r[`${g}OK`]&&r[`${g}Chuck`]===c).map(r=>r[`${g}PeakS1`]).filter(Number.isFinite)});return groups;}
@@ -643,8 +643,8 @@
     function removalLegendLabels(){if(state.lang==="en")return{g1:"G1 Rough",g2:"G2 Fine"};if(state.lang==="cn")return{g1:"G1\u7c97\u78e8",g2:"G2\u7ec6\u78e8"};return{g1:"G1\u7c97\u78e8",g2:"G2\u7d30\u78e8"};}
     function renderRemoval(){const l=L(),names=removalLegendLabels();drawLines($("chtRemoval"),[{name:names.g1,legendName:names.g1,color:"g1",points:okSeries("G1","g1Removal")},{name:names.g2,legendName:names.g2,color:"g2",points:okSeries("G2","g2Removal")}],l.wafer,`${l.removal} (${l.um})`,l.removalTitle);const rows=[statRow("G1",okSeries("G1","g1Removal").map(p=>p.y)),statRow("G2",okSeries("G2","g2Removal").map(p=>p.y))];$("dgvRemovalStats").innerHTML=table([l.stat,l.avg,l.std,l.max,l.min,l.count],rows);}
     function finalLegendLabel(s){return String(s.legendName||roughFineName(s.name)||"");}
-    function legendRows(ctx,series,x,maxW){ctx.font="12px Consolas, monospace";let cx=x,rows=1;for(const s of series){const w=Math.max(140,Math.min(320,ctx.measureText(finalLegendLabel(s)).width+96));if(cx+w>maxW&&rows<2){cx=x;rows++;}cx+=w+14;}return rows;}
-    function drawLegend(ctx,series,x,y,maxW){ctx.font="12px Consolas, monospace";ctx.textBaseline="alphabetic";let cx=x,cy=y,rows=1;for(const s of series){const label=finalLegendLabel(s),tw=ctx.measureText(label).width,w=Math.max(140,Math.min(320,tw+96));if(cx+w>maxW&&rows<2){cx=x;cy+=24;rows++;}if(cx+w>maxW&&rows>=2){ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,92,22);ctx.strokeStyle="#4b5563";ctx.strokeRect(cx-6,cy-18,92,22);ctx.fillStyle="#1f2937";ctx.fillText(`+${series.length-series.indexOf(s)} more`,cx+12,cy-3);break;}const c=colorMap[s.color]||s.color||"#0072bd";ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,w,22);ctx.strokeStyle="#7c8795";ctx.lineWidth=1;ctx.strokeRect(cx-6,cy-18,w,22);ctx.fillStyle=c;ctx.fillRect(cx+22,cy-12,14,8);ctx.fillStyle="#111827";ctx.fillText(label,cx+72,cy-3);cx+=w+14;}return y+rows*24;}
+    function legendRows(ctx,series,x,maxW){ctx.font="12px Consolas, monospace";let cx=x,rows=1;for(const s of series){const w=Math.max(154,Math.min(340,ctx.measureText(finalLegendLabel(s)).width+112));if(cx+w>maxW&&rows<2){cx=x;rows++;}cx+=w+14;}return rows;}
+    function drawLegend(ctx,series,x,y,maxW){ctx.font="12px Consolas, monospace";ctx.textBaseline="alphabetic";let cx=x,cy=y,rows=1;for(const s of series){const label=finalLegendLabel(s),tw=ctx.measureText(label).width,w=Math.max(154,Math.min(340,tw+112));if(cx+w>maxW&&rows<2){cx=x;cy+=24;rows++;}if(cx+w>maxW&&rows>=2){ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,92,22);ctx.strokeStyle="#4b5563";ctx.strokeRect(cx-6,cy-18,92,22);ctx.fillStyle="#1f2937";ctx.fillText(`+${series.length-series.indexOf(s)} more`,cx+12,cy-3);break;}const c=colorMap[s.color]||s.color||"#0072bd";ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,w,22);ctx.strokeStyle="#7c8795";ctx.lineWidth=1;ctx.strokeRect(cx-6,cy-18,w,22);ctx.fillStyle=c;ctx.fillRect(cx+22,cy-12,14,8);ctx.fillStyle="#111827";ctx.fillText(label,cx+88,cy-3);cx+=w+14;}return y+rows*24;}
 
     function isWaferAxis(label){return /Wafer|晶片|序號|序号/.test(label||"");}
     function sourceLoadingAxis(series,overall){const vals=chartSeries(series).flatMap(s=>s.points.map(p=>p.y)).filter(Number.isFinite);if(!vals.length)return {};const dataMin=min(vals),dataMax=max(vals);if(!(dataMax>dataMin))return {};const range=dataMax-dataMin,padding=Math.max(range*(overall?.2:.3),1);if(overall){const yMin=Math.floor(dataMin-padding),yMax=Math.ceil(dataMax+padding),yInterval=Math.max(.5,Math.round(((yMax-yMin)/8)*10)/10);return{yMin,yMax,yInterval,xMin:1};}const yMin=Math.floor((dataMin-padding)*2)/2,yMax=Math.ceil((dataMax+padding)*2)/2,yInterval=Math.max(.5,Math.round(((yMax-yMin)/6)*10)/10);return{yMin,yMax,yInterval,xMin:1};}
