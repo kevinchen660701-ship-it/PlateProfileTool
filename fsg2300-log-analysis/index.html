@@ -661,6 +661,79 @@
     function renderSeq(){if(!state.seqLoaded)return;const l=L();drawSeqLines($("chtLoadingSeqG1"),sequenceSeries("g1",20),l.loadingY,`G1 ${l.g1Rough.replace(/^G1\s*/,"")} ${l.seqTitle}`);drawSeqLines($("chtLoadingSeqG2"),sequenceSeries("g2",20),l.loadingY,`G2 ${l.g2Fine.replace(/^G2\s*/,"")} ${l.seqTitle}`);}
     function renderPar(){if(!state.seqLoaded)return;const l=L(),selected=[...document.querySelectorAll(".chkPar")].filter(x=>x.checked).map(x=>int(x.value));drawLines($("chtLoadingParG1"),parallelSeries("g1",selected),procTimeAxisLabel(),l.loadingY,`G1 ${l.g1Rough.replace(/^G1\s*/,"")} ${l.parTitle}`,{xMin:0});drawLines($("chtLoadingParG2"),parallelSeries("g2",selected),procTimeAxisLabel(),l.loadingY,`G2 ${l.g2Fine.replace(/^G2\s*/,"")} ${l.parTitle}`,{xMin:0});}
 
+    function drawLines(canvas,series,xLabel,yLabel,title,options={}){
+      const {ctx,w,h}=setupCanvas(canvas),ss=chartSeries(series);
+      const gridColor="#bcc7d3",axisColor="#202936",compact=h<380;
+      ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);
+      ctx.font="14px Microsoft JhengHei UI, Arial";ctx.fillStyle="#1f2937";ctx.textAlign="center";ctx.fillText(title||"",w/2,compact?18:22);
+      const legendX=96,legendY=compact?44:60,rows=legendRows(ctx,ss,legendX,w-34);
+      const pad={l:76,r:34,t:Math.max(compact?78:110,legendY+rows*24+(compact?4:12)),b:compact?46:62};
+      const pw=Math.max(50,w-pad.l-pad.r),ph=Math.max(50,h-pad.t-pad.b),pts=ss.flatMap(s=>s.points);
+      ctx.fillStyle="#374151";ctx.font="12px Consolas, monospace";
+      ctx.save();ctx.translate(18,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText(yLabel||"",0,0);ctx.restore();
+      ctx.textAlign="center";ctx.fillText(xLabel||"",pad.l+pw/2,h-(compact?8:14));
+      let xMin=Number.isFinite(options.xMin)?options.xMin:0,xMax=Number.isFinite(options.xMax)?options.xMax:1;
+      let yMin=Number.isFinite(options.yMin)?options.yMin:0,yMax=Number.isFinite(options.yMax)?options.yMax:1;
+      let xTicks=[],yTicks=[];const waferAxis=isWaferAxis(xLabel);
+      if(pts.length){
+        if(!Number.isFinite(options.xMin))xMin=min(pts.map(p=>p.x));
+        if(!Number.isFinite(options.xMax))xMax=max(pts.map(p=>p.x));
+        const rawYMin=min(pts.map(p=>p.y)),rawYMax=max(pts.map(p=>p.y));
+        if(waferAxis){xMin=Math.floor(xMin);xMax=Math.ceil(xMax);}
+        if(xMin===xMax){xMin-=1;xMax+=1;}
+        if(!waferAxis&&!Number.isFinite(options.xMin)&&!Number.isFinite(options.xMax)){const xp=(xMax-xMin)*.025;xMin-=xp;xMax+=xp;}
+        if(!Number.isFinite(options.yMin)||!Number.isFinite(options.yMax)){
+          yMin=rawYMin;yMax=rawYMax;
+          if(yMin===yMax){const d=Math.abs(yMin)||1;yMin-=d*.5;yMax+=d*.5;}
+          const yp=(yMax-yMin)*.12;yMin-=yp;yMax+=yp;
+          if(rawYMin>=0)yMin=Math.max(0,yMin);
+        }
+        if(waferAxis){
+          const span=Math.max(1,xMax-xMin),step=Math.max(1,Math.ceil(span/8));
+          for(let v=xMin;v<=xMax;v+=step)xTicks.push(v);
+          if(xTicks[xTicks.length-1]!==xMax)xTicks.push(xMax);
+        }else{
+          for(let i=0;i<=4;i++)xTicks.push(xMin+i*(xMax-xMin)/4);
+        }
+      }
+      if(Number.isFinite(options.yInterval)&&options.yInterval>0&&Number.isFinite(options.yMin)&&Number.isFinite(options.yMax)){
+        for(let v=yMax;v>=yMin-.0001;v-=options.yInterval)yTicks.push(Number(v.toFixed(6)));
+        if(Math.abs(yTicks[yTicks.length-1]-yMin)>.0001)yTicks.push(yMin);
+      }else{
+        for(let i=0;i<=5;i++)yTicks.push(yMax-i*(yMax-yMin)/5);
+      }
+      const sx=x=>pad.l+((x-xMin)/(xMax-xMin||1))*pw,sy=y=>pad.t+ph-((y-yMin)/(yMax-yMin||1))*ph;
+      const yTickLabel=v=>options.yInteger?String(Math.round(v)):oneDecimal(v);
+      ctx.strokeStyle=gridColor;ctx.lineWidth=1;
+      for(const value of yTicks){const yy=sy(value);if(yy>=pad.t-1&&yy<=h-pad.b+1){ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();}}
+      for(const value of xTicks){const xx=sx(value);if(xx>=pad.l-1&&xx<=w-pad.r+1){ctx.beginPath();ctx.moveTo(xx,pad.t);ctx.lineTo(xx,h-pad.b);ctx.stroke();}}
+      ctx.strokeStyle=axisColor;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,h-pad.b);ctx.lineTo(w-pad.r,h-pad.b);ctx.stroke();
+      ctx.lineWidth=1;ctx.textAlign="right";ctx.fillStyle="#374151";
+      for(const value of yTicks){const yy=sy(value);if(yy>=pad.t-1&&yy<=h-pad.b+1)ctx.fillText(yTickLabel(value),pad.l-8,yy+4);}
+      ctx.textAlign="center";
+      for(const value of xTicks){const xx=sx(value);if(xx>=pad.l-1&&xx<=w-pad.r+1)ctx.fillText(waferAxis?waferTick(value):oneDecimal(value),xx,h-(compact?24:36));}
+      if(!pts.length){ctx.fillStyle="#606a76";ctx.fillText(L().noData,pad.l+pw/2,pad.t+ph/2);drawLegend(ctx,ss,legendX,legendY,w-34);ctx.textAlign="left";return;}
+      ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,pw,ph);ctx.clip();
+      ss.forEach(s=>{
+        const c=colorMap[s.color]||s.color||"#0072bd";
+        ctx.strokeStyle=c;ctx.lineWidth=2;
+        if(ctx.setLineDash)ctx.setLineDash(s.dashed?(s.dash||[8,5]):[]);
+        ctx.beginPath();s.points.forEach((pt,j)=>j?ctx.lineTo(sx(pt.x),sy(pt.y)):ctx.moveTo(sx(pt.x),sy(pt.y)));ctx.stroke();
+      });
+      if(ctx.setLineDash)ctx.setLineDash([]);
+      ctx.restore();drawLegend(ctx,ss,legendX,legendY,w-34);ctx.textAlign="left";
+    }
+
+    function renderTime(){
+      const l=L();
+      drawLines($("chtTime"),[
+        {name:l.g1Sec,color:"g1",points:okSeries("G1","g1Sec")},
+        {name:l.g2Sec,color:"g2",points:okSeries("G2","g2Sec")},
+        {name:l.g1Wait,color:"orange",dashed:true,points:state.records.map(r=>({x:r.wafer,y:r.waitG1||0}))},
+        {name:l.g2Wait,color:"purple",dashed:true,points:state.records.map(r=>({x:r.wafer,y:r.waitG2||0}))}
+      ],l.wafer,`${l.timeTitle.includes("Time")?"Time":l.sec}`,l.timeTitle,{yInteger:true});
+    }
+
     const aiProviderKey="fsg2300.aiProvider";
     const apiKeyPrefix="fsg2300.aiKey.";
     function saveAIProvider(){try{localStorage.setItem(aiProviderKey,$("cboProvider").value||"");}catch{}}
