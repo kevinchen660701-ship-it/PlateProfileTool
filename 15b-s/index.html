@@ -1020,9 +1020,26 @@
             中心空區直徑 (mm)
             <input id="centerDiameterMm" type="number" value="140" min="0" max="900" step="1">
           </label>
+          <label>
+            Base geometry k
+            <input id="geometryBaseK" type="number" value="0.55" min="0" max="3" step="0.01">
+          </label>
+          <label>
+            Contact k
+            <input id="geometryContactK" type="number" value="0.25" min="0" max="3" step="0.01">
+          </label>
+          <label>
+            Sweep k
+            <input id="geometrySweepK" type="number" value="0.35" min="0" max="3" step="0.01">
+          </label>
         </div>
         <div class="formula-box">
-          factor = 1 + (min(|Delta|/25,1) x Factor Delta k + min(MR gap/25,1) x Factor MR k) / Geometry gain
+          <div><strong>Geometry gain 說明</strong></div>
+          <div>Base geometry k：基礎修整效率，代表機台即使沒有高覆蓋率時仍有的基本修整能力。</div>
+          <div>Contact k：晶圓接觸寬度對有效環寬 W 的權重。</div>
+          <div>Sweep k：Jig swing 覆蓋有效環寬 W 的權重。</div>
+          <div>Geometry gain = Base geometry k + contactRatio x Contact k + sweepCoverage x Sweep k</div>
+          <div>factor = 1 + (min(|Delta|/25,1) x Factor Delta k + min(MR gap/25,1) x Factor MR k) / Geometry gain</div>
         </div>
         <div class="calibration-actions">
           <button type="button" class="primary" id="applyCalibrationBtn">Apply</button>
@@ -1037,6 +1054,7 @@
       "targetShapeValue", "targetShapeAuto", "actualShapeValue", "actualShapeAuto",
       "mrTarget1", "mrActual1", "mrTarget2", "mrActual2", "mrTarget3", "mrActual3",
       "shapeK", "removalK", "factorDeltaK", "factorMrK", "plateDiameterMm", "waferDiameterMm", "centerDiameterMm",
+      "geometryBaseK", "geometryContactK", "geometrySweepK",
       "modeText", "timerText", "autoStopText", "progressBar",
       "deltaText", "ratioText", "directionText", "rateText", "animSpeedText", "formulaText",
       "targetFill", "targetMarker", "actualFill", "actualMarker", "plateDisk",
@@ -1064,7 +1082,8 @@
       "targetShapeValue", "actualShapeValue",
       "mrTarget1", "mrActual1", "mrTarget2", "mrActual2", "mrTarget3", "mrActual3",
       "shapeK", "removalK", "factorDeltaK", "factorMrK",
-      "plateDiameterMm", "waferDiameterMm", "centerDiameterMm"
+      "plateDiameterMm", "waferDiameterMm", "centerDiameterMm",
+      "geometryBaseK", "geometryContactK", "geometrySweepK"
     ];
 
     const state = {
@@ -1203,6 +1222,9 @@
       const removalK = Math.max(0.1, num(el.removalK, 1));
       const factorDeltaK = Math.max(0, num(el.factorDeltaK, 0.95));
       const factorMrK = Math.max(0, num(el.factorMrK, 0.12));
+      const geometryBaseK = Math.max(0, num(el.geometryBaseK, 0.55));
+      const geometryContactK = Math.max(0, num(el.geometryContactK, 0.25));
+      const geometrySweepK = Math.max(0, num(el.geometrySweepK, 0.35));
       const severity = clamp(absDelta / 25, 0, 1);
       const removalBoost = clamp(removalGapAvg / 25, 0, 1);
       const userPlate = clamp(num(el.plateRpm, 10), 5, 100);
@@ -1212,7 +1234,7 @@
       const effectiveWidth = geometry.effectiveWidth;
       const contactRatio = geometry.waferD / effectiveWidth;
       const sweepCoverage = clamp((geometry.waferD + geometry.jigSweep) / effectiveWidth, 0, 1.15);
-      const geometryGain = clamp(0.55 + contactRatio * 0.25 + sweepCoverage * 0.35, 0.75, 1.25);
+      const geometryGain = clamp(geometryBaseK + contactRatio * geometryContactK + sweepCoverage * geometrySweepK, 0.25, 3);
       const splitDemand = severity * factorDeltaK + removalBoost * factorMrK;
       const split = 1 + splitDemand / geometryGain;
 
@@ -1265,6 +1287,9 @@
         contactRatio,
         sweepCoverage,
         geometryGain,
+        geometryBaseK,
+        geometryContactK,
+        geometrySweepK,
         splitDemand,
         flowFactor,
         motionFactor,
@@ -1298,6 +1323,9 @@
       const contactRatio = calc.contactRatio.toFixed(3);
       const sweepCoverage = calc.sweepCoverage.toFixed(3);
       const geometryGain = calc.geometryGain.toFixed(2);
+      const geometryBaseK = calc.geometryBaseK.toFixed(2);
+      const geometryContactK = calc.geometryContactK.toFixed(2);
+      const geometrySweepK = calc.geometrySweepK.toFixed(2);
       const contactLoadFactor = calc.contactLoadFactor.toFixed(2);
       const jigFormula = calc.delta > 0.15
         ? `Jig rpm = Plate rpm / factor = ${plate} / ${split} = ${jig} rpm`
@@ -1310,7 +1338,7 @@
         <div>W = Ro - Ri = ${calc.outerRadius.toFixed(0)} - ${calc.innerRadius.toFixed(0)} = ${calc.effectiveWidth.toFixed(0)} mm</div>
         <div>contactRatio = waferD / W = ${calc.waferD.toFixed(0)} / ${calc.effectiveWidth.toFixed(0)} = ${contactRatio}</div>
         <div>sweepCoverage = (waferD + Jig sweep) / W = (${calc.waferD.toFixed(0)} + ${calc.jigSweep.toFixed(0)}) / ${calc.effectiveWidth.toFixed(0)} = ${sweepCoverage}</div>
-        <div>Geometry gain = 0.55 + contactRatio x 0.25 + sweepCoverage x 0.35 = ${geometryGain}</div>
+        <div>Geometry gain = ${geometryBaseK} + contactRatio x ${geometryContactK} + sweepCoverage x ${geometrySweepK} = ${geometryGain}</div>
         <div>factor = 1 + (min(|Delta|/25,1) x ${factorDeltaK} + min(MR gap/25,1) x ${factorMrK}) / ${geometryGain} = ${split}</div>
         <div>Delta = Target - Actual = ${calc.targetShape.toFixed(1)} - ${calc.actualShape.toFixed(1)} = ${delta} um</div>
         <div><strong>時間計算式</strong>shapeRate = max(0.15, Shape k x |Plate-Jig|/(Plate+Jig) x (0.75 + MR boost x 0.45) x Geometry gain)</div>
@@ -1350,7 +1378,7 @@
       el.directionText.textContent = calc.direction;
       el.rateText.textContent = `${calc.shapeRate.toFixed(2)} um/min`;
       el.calibrationSummary.textContent = `Shape ${num(el.shapeK, 3).toFixed(1)} / Removal ${num(el.removalK, 1).toFixed(1)}`;
-      el.factorSummary.textContent = `Factor ${calc.factorDeltaK.toFixed(2)} / ${calc.factorMrK.toFixed(2)}`;
+      el.factorSummary.textContent = `Factor ${calc.factorDeltaK.toFixed(2)} / ${calc.factorMrK.toFixed(2)} | Geometry ${calc.geometryBaseK.toFixed(2)} / ${calc.geometryContactK.toFixed(2)} / ${calc.geometrySweepK.toFixed(2)}`;
       el.autoStopText.textContent = formatClock(calc.estimatedMinutes * 60);
       el.formulaText.innerHTML = formatFormula(calc);
       updateSlurryVisual();
