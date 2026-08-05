@@ -1008,6 +1008,18 @@
             Factor MR k
             <input id="factorMrK" type="number" value="0.12" min="0" max="1" step="0.01">
           </label>
+          <label>
+            Plate 直徑 (mm)
+            <input id="plateDiameterMm" type="number" value="420" min="1" max="1000" step="1">
+          </label>
+          <label>
+            晶圓尺寸 (mm)
+            <input id="waferDiameterMm" type="number" value="120" min="1" max="500" step="1">
+          </label>
+          <label>
+            中心空區直徑 (mm)
+            <input id="centerDiameterMm" type="number" value="140" min="0" max="900" step="1">
+          </label>
         </div>
         <div class="formula-box">
           factor = 1 + (min(|Delta|/25,1) x Factor Delta k + min(MR gap/25,1) x Factor MR k) / Geometry gain
@@ -1024,7 +1036,8 @@
       "plateRpm", "jigRpm", "colloidalFlow", "abrasive1Flow", "abrasive2Flow",
       "targetShapeValue", "targetShapeAuto", "actualShapeValue", "actualShapeAuto",
       "mrTarget1", "mrActual1", "mrTarget2", "mrActual2", "mrTarget3", "mrActual3",
-      "shapeK", "removalK", "factorDeltaK", "factorMrK", "modeText", "timerText", "autoStopText", "progressBar",
+      "shapeK", "removalK", "factorDeltaK", "factorMrK", "plateDiameterMm", "waferDiameterMm", "centerDiameterMm",
+      "modeText", "timerText", "autoStopText", "progressBar",
       "deltaText", "ratioText", "directionText", "rateText", "animSpeedText", "formulaText",
       "targetFill", "targetMarker", "actualFill", "actualMarker", "plateDisk",
       "startBtn", "stopBtn", "resetBtn", "plateLamp", "jigLamp", "slurryLamp",
@@ -1038,7 +1051,7 @@
     const zeroButtons = Array.from(document.querySelectorAll("[data-zero]"));
     const slurryNozzles = Array.from(document.querySelectorAll(".slurry-nozzle"));
     const slurryDrops = Array.from(document.querySelectorAll(".slurry-drop"));
-    const machineGeometry = {
+    const defaultGeometry = {
       plateOD: 420,
       centerOD: 140,
       waferD: 120,
@@ -1050,7 +1063,8 @@
       "plateRpm", "colloidalFlow", "abrasive1Flow", "abrasive2Flow",
       "targetShapeValue", "actualShapeValue",
       "mrTarget1", "mrActual1", "mrTarget2", "mrActual2", "mrTarget3", "mrActual3",
-      "shapeK", "removalK", "factorDeltaK", "factorMrK"
+      "shapeK", "removalK", "factorDeltaK", "factorMrK",
+      "plateDiameterMm", "waferDiameterMm", "centerDiameterMm"
     ];
 
     const state = {
@@ -1087,6 +1101,25 @@
     function num(input, fallback = 0) {
       const value = Number(input.value);
       return Number.isFinite(value) ? value : fallback;
+    }
+
+    function geometryInputs() {
+      const plateOD = Math.max(1, num(el.plateDiameterMm, defaultGeometry.plateOD));
+      const centerOD = clamp(num(el.centerDiameterMm, defaultGeometry.centerOD), 0, plateOD - 1);
+      const waferD = Math.max(1, num(el.waferDiameterMm, defaultGeometry.waferD));
+      const outerRadius = plateOD / 2;
+      const innerRadius = centerOD / 2;
+      const effectiveWidth = Math.max(1, outerRadius - innerRadius);
+
+      return {
+        plateOD,
+        centerOD,
+        waferD,
+        jigSweep: defaultGeometry.jigSweep,
+        outerRadius,
+        innerRadius,
+        effectiveWidth
+      };
     }
 
     function saveInputs() {
@@ -1173,11 +1206,12 @@
       const severity = clamp(absDelta / 25, 0, 1);
       const removalBoost = clamp(removalGapAvg / 25, 0, 1);
       const userPlate = clamp(num(el.plateRpm, 10), 5, 100);
-      const outerRadius = machineGeometry.plateOD / 2;
-      const innerRadius = machineGeometry.centerOD / 2;
-      const effectiveWidth = outerRadius - innerRadius;
-      const contactRatio = machineGeometry.waferD / effectiveWidth;
-      const sweepCoverage = clamp((machineGeometry.waferD + machineGeometry.jigSweep) / effectiveWidth, 0, 1.15);
+      const geometry = geometryInputs();
+      const outerRadius = geometry.outerRadius;
+      const innerRadius = geometry.innerRadius;
+      const effectiveWidth = geometry.effectiveWidth;
+      const contactRatio = geometry.waferD / effectiveWidth;
+      const sweepCoverage = clamp((geometry.waferD + geometry.jigSweep) / effectiveWidth, 0, 1.15);
       const geometryGain = clamp(0.55 + contactRatio * 0.25 + sweepCoverage * 0.35, 0.75, 1.25);
       const splitDemand = severity * factorDeltaK + removalBoost * factorMrK;
       const split = 1 + splitDemand / geometryGain;
@@ -1224,6 +1258,10 @@
         outerRadius,
         innerRadius,
         effectiveWidth,
+        plateOD: geometry.plateOD,
+        centerOD: geometry.centerOD,
+        waferD: geometry.waferD,
+        jigSweep: geometry.jigSweep,
         contactRatio,
         sweepCoverage,
         geometryGain,
@@ -1270,8 +1308,8 @@
       return `
         <div><strong>Jig rpm 計算式</strong>${jigFormula}</div>
         <div>W = Ro - Ri = ${calc.outerRadius.toFixed(0)} - ${calc.innerRadius.toFixed(0)} = ${calc.effectiveWidth.toFixed(0)} mm</div>
-        <div>contactRatio = waferD / W = ${machineGeometry.waferD} / ${calc.effectiveWidth.toFixed(0)} = ${contactRatio}</div>
-        <div>sweepCoverage = (waferD + Jig sweep) / W = (${machineGeometry.waferD} + ${machineGeometry.jigSweep}) / ${calc.effectiveWidth.toFixed(0)} = ${sweepCoverage}</div>
+        <div>contactRatio = waferD / W = ${calc.waferD.toFixed(0)} / ${calc.effectiveWidth.toFixed(0)} = ${contactRatio}</div>
+        <div>sweepCoverage = (waferD + Jig sweep) / W = (${calc.waferD.toFixed(0)} + ${calc.jigSweep.toFixed(0)}) / ${calc.effectiveWidth.toFixed(0)} = ${sweepCoverage}</div>
         <div>Geometry gain = 0.55 + contactRatio x 0.25 + sweepCoverage x 0.35 = ${geometryGain}</div>
         <div>factor = 1 + (min(|Delta|/25,1) x ${factorDeltaK} + min(MR gap/25,1) x ${factorMrK}) / ${geometryGain} = ${split}</div>
         <div>Delta = Target - Actual = ${calc.targetShape.toFixed(1)} - ${calc.actualShape.toFixed(1)} = ${delta} um</div>
@@ -1384,7 +1422,8 @@
       el.animSpeedText.textContent = `Plate ${plateActivity ? plateRpm.toFixed(0) : 0} / Jig ${jigActivity ? jigRpm.toFixed(0) : 0} rpm`;
       el.plateDisk.style.transform = `translate(-50%, -50%) rotate(${state.plateAngle}deg)`;
       const platePixels = el.plateDisk.offsetWidth || 420;
-      const sweepPx = platePixels * machineGeometry.jigSweep / machineGeometry.plateOD;
+      const geometry = geometryInputs();
+      const sweepPx = platePixels * geometry.jigSweep / geometry.plateOD;
       const sweepHz = clamp(jigRpm / 180, 0.04, 0.38);
       const sweepPhase = now / 1000 * sweepHz * Math.PI * 2;
       const swing = Math.sin(sweepPhase) * sweepPx * jigActivity;
