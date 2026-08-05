@@ -408,7 +408,7 @@
       transform: translate(-50%, -50%);
     }
 
-    .jig.one { left: 50%; top: 35%; }
+    .jig.one { left: 50%; top: 38%; }
     .jig.two { left: 32%; top: 59%; }
     .jig.three { left: 68%; top: 59%; }
 
@@ -1390,7 +1390,7 @@
       jigHolders.forEach((holder, index) => {
         const sweepOffset = Math.sin(sweepPhase + index * 2.09) * sweepPx * jigActivity;
         if (index === 0) {
-          holder.style.transform = `translate(-50%, -50%) translateY(${sweepOffset.toFixed(1)}px)`;
+          holder.style.transform = `translate(-50%, -50%) translateY(${(sweepOffset * 0.62).toFixed(1)}px)`;
         } else {
           holder.style.transform = `translate(-50%, -50%) translateX(${sweepOffset.toFixed(1)}px)`;
         }
