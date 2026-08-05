@@ -1010,7 +1010,7 @@
           </label>
         </div>
         <div class="formula-box">
-          factor = 1 + min(|Delta|/25,1) x Factor Delta k + min(MR gap/25,1) x Factor MR k
+          factor = 1 + (min(|Delta|/25,1) x Factor Delta k + min(MR gap/25,1) x Factor MR k) / Geometry gain
         </div>
         <div class="calibration-actions">
           <button type="button" class="primary" id="applyCalibrationBtn">Apply</button>
@@ -1033,10 +1033,17 @@
     ];
 
     const el = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+    const jigHolders = Array.from(document.querySelectorAll(".jig"));
     const jigRotors = Array.from(document.querySelectorAll(".jig-rotor"));
     const zeroButtons = Array.from(document.querySelectorAll("[data-zero]"));
     const slurryNozzles = Array.from(document.querySelectorAll(".slurry-nozzle"));
     const slurryDrops = Array.from(document.querySelectorAll(".slurry-drop"));
+    const machineGeometry = {
+      plateOD: 420,
+      centerOD: 140,
+      waferD: 120,
+      jigSweep: 20
+    };
     const oldStorageKey = ["lp", "70-plate-simulator-inputs-v1"].join("");
     const storageKey = "15b-s-plate-simulator-inputs-v1";
     const savedInputIds = [
@@ -1166,7 +1173,14 @@
       const severity = clamp(absDelta / 25, 0, 1);
       const removalBoost = clamp(removalGapAvg / 25, 0, 1);
       const userPlate = clamp(num(el.plateRpm, 10), 5, 100);
-      const split = 1 + severity * factorDeltaK + removalBoost * factorMrK;
+      const outerRadius = machineGeometry.plateOD / 2;
+      const innerRadius = machineGeometry.centerOD / 2;
+      const effectiveWidth = outerRadius - innerRadius;
+      const contactRatio = machineGeometry.waferD / effectiveWidth;
+      const sweepCoverage = clamp((machineGeometry.waferD + machineGeometry.jigSweep) / effectiveWidth, 0, 1.15);
+      const geometryGain = clamp(0.55 + contactRatio * 0.25 + sweepCoverage * 0.35, 0.75, 1.25);
+      const splitDemand = severity * factorDeltaK + removalBoost * factorMrK;
+      const split = 1 + splitDemand / geometryGain;
 
       let plate = userPlate;
       let jig = userPlate;
@@ -1185,8 +1199,11 @@
 
       const ratio = plate / jig;
       const differential = Math.abs(plate - jig) / Math.max(1, plate + jig);
-      const shapeRate = absDelta < 0.15 ? 0 : Math.max(0.15, shapeK * differential * (0.75 + removalBoost * 0.45));
-      const removalRate = Math.max(0.12, removalK * ((slurry + abrasiveAvg) / 45) * (0.75 + (plate + jig) / 160));
+      const flowFactor = (slurry + abrasiveAvg) / 45;
+      const motionFactor = 0.75 + (plate + jig) / 160;
+      const contactLoadFactor = 0.85 + Math.min(contactRatio, 1) * 0.18;
+      const shapeRate = absDelta < 0.15 ? 0 : Math.max(0.15, shapeK * differential * (0.75 + removalBoost * 0.45) * geometryGain);
+      const removalRate = Math.max(0.12, removalK * flowFactor * motionFactor * contactLoadFactor);
       const shapeTime = absDelta < 0.15 ? 0 : absDelta / shapeRate;
       const removalTime = removalGapAvg / removalRate;
       const estimatedMinutes = clamp(Math.max(shapeTime, removalTime, 0.25), 0.25, 90);
@@ -1204,6 +1221,16 @@
         factorDeltaK,
         factorMrK,
         differential,
+        outerRadius,
+        innerRadius,
+        effectiveWidth,
+        contactRatio,
+        sweepCoverage,
+        geometryGain,
+        splitDemand,
+        flowFactor,
+        motionFactor,
+        contactLoadFactor,
         removalGapAvg,
         removalBoost,
         shapeRate,
@@ -1230,6 +1257,10 @@
       const factorMrK = calc.factorMrK.toFixed(2);
       const slurry = num(el.colloidalFlow).toFixed(0);
       const abrasiveAvg = ((num(el.abrasive1Flow) + num(el.abrasive2Flow)) / 2).toFixed(0);
+      const contactRatio = calc.contactRatio.toFixed(3);
+      const sweepCoverage = calc.sweepCoverage.toFixed(3);
+      const geometryGain = calc.geometryGain.toFixed(2);
+      const contactLoadFactor = calc.contactLoadFactor.toFixed(2);
       const jigFormula = calc.delta > 0.15
         ? `Jig rpm = Plate rpm / factor = ${plate} / ${split} = ${jig} rpm`
         : calc.delta < -0.15
@@ -1238,13 +1269,17 @@
 
       return `
         <div><strong>Jig rpm 計算式</strong>${jigFormula}</div>
-        <div>factor = 1 + min(|Delta|/25,1) x ${factorDeltaK} + min(MR gap/25,1) x ${factorMrK} = ${split}</div>
+        <div>W = Ro - Ri = ${calc.outerRadius.toFixed(0)} - ${calc.innerRadius.toFixed(0)} = ${calc.effectiveWidth.toFixed(0)} mm</div>
+        <div>contactRatio = waferD / W = ${machineGeometry.waferD} / ${calc.effectiveWidth.toFixed(0)} = ${contactRatio}</div>
+        <div>sweepCoverage = (waferD + Jig sweep) / W = (${machineGeometry.waferD} + ${machineGeometry.jigSweep}) / ${calc.effectiveWidth.toFixed(0)} = ${sweepCoverage}</div>
+        <div>Geometry gain = 0.55 + contactRatio x 0.25 + sweepCoverage x 0.35 = ${geometryGain}</div>
+        <div>factor = 1 + (min(|Delta|/25,1) x ${factorDeltaK} + min(MR gap/25,1) x ${factorMrK}) / ${geometryGain} = ${split}</div>
         <div>Delta = Target - Actual = ${calc.targetShape.toFixed(1)} - ${calc.actualShape.toFixed(1)} = ${delta} um</div>
-        <div><strong>時間計算式</strong>shapeRate = max(0.15, Shape k x |Plate-Jig|/(Plate+Jig) x (0.75 + MR boost x 0.45))</div>
-        <div>shapeRate = max(0.15, ${shapeK} x ${diff} x (0.75 + ${removalBoost} x 0.45)) = ${calc.shapeRate.toFixed(2)} um/min</div>
+        <div><strong>時間計算式</strong>shapeRate = max(0.15, Shape k x |Plate-Jig|/(Plate+Jig) x (0.75 + MR boost x 0.45) x Geometry gain)</div>
+        <div>shapeRate = max(0.15, ${shapeK} x ${diff} x (0.75 + ${removalBoost} x 0.45) x ${geometryGain}) = ${calc.shapeRate.toFixed(2)} um/min</div>
         <div>shapeTime = |Delta| / shapeRate = ${absDelta} / ${calc.shapeRate.toFixed(2)} = ${calc.shapeTime.toFixed(1)} min</div>
-        <div>removalRate = max(0.12, Removal k x ((Colloidal + AbrasiveAvg)/45) x (0.75 + (Plate+Jig)/160))</div>
-        <div>removalRate = max(0.12, ${removalK} x ((${slurry}+${abrasiveAvg})/45) x (0.75 + (${plate}+${jig})/160)) = ${calc.removalRate.toFixed(2)} um/min</div>
+        <div>removalRate = max(0.12, Removal k x Flow factor x Motion factor x Contact load factor)</div>
+        <div>removalRate = max(0.12, ${removalK} x ((${slurry}+${abrasiveAvg})/45) x (0.75 + (${plate}+${jig})/160) x ${contactLoadFactor}) = ${calc.removalRate.toFixed(2)} um/min</div>
         <div>removalTime = MR gap / removalRate = ${removalGap} / ${calc.removalRate.toFixed(2)} = ${calc.removalTime.toFixed(1)} min</div>
         <div>Auto-Stop = max(shapeTime, removalTime, 0.25) = ${calc.estimatedMinutes.toFixed(1)} min</div>
       `;
@@ -1348,6 +1383,14 @@
       state.jigAngle = (state.jigAngle - jigDegPerSec * dt * jigActivity) % 360;
       el.animSpeedText.textContent = `Plate ${plateActivity ? plateRpm.toFixed(0) : 0} / Jig ${jigActivity ? jigRpm.toFixed(0) : 0} rpm`;
       el.plateDisk.style.transform = `translate(-50%, -50%) rotate(${state.plateAngle}deg)`;
+      const platePixels = el.plateDisk.offsetWidth || 420;
+      const sweepPx = platePixels * machineGeometry.jigSweep / machineGeometry.plateOD;
+      const sweepHz = clamp(jigRpm / 90, 0.08, 0.75);
+      const sweepPhase = now / 1000 * sweepHz * Math.PI * 2;
+      jigHolders.forEach((holder, index) => {
+        const sweepOffset = Math.sin(sweepPhase + index * 2.09) * sweepPx * jigActivity;
+        holder.style.transform = `translate(-50%, -50%) translateX(${sweepOffset.toFixed(1)}px)`;
+      });
       jigRotors.forEach((rotor, index) => {
         rotor.style.transform = `rotate(${state.jigAngle + index * 34}deg)`;
       });
