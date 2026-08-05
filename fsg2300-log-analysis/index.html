@@ -646,7 +646,11 @@
     function legendRows(ctx,series,x,maxW){ctx.font="12px Consolas, monospace";let cx=x,rows=1;for(const s of series){const w=Math.max(140,Math.min(320,ctx.measureText(finalLegendLabel(s)).width+96));if(cx+w>maxW&&rows<2){cx=x;rows++;}cx+=w+14;}return rows;}
     function drawLegend(ctx,series,x,y,maxW){ctx.font="12px Consolas, monospace";ctx.textBaseline="alphabetic";let cx=x,cy=y,rows=1;for(const s of series){const label=finalLegendLabel(s),tw=ctx.measureText(label).width,w=Math.max(140,Math.min(320,tw+96));if(cx+w>maxW&&rows<2){cx=x;cy+=24;rows++;}if(cx+w>maxW&&rows>=2){ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,92,22);ctx.strokeStyle="#4b5563";ctx.strokeRect(cx-6,cy-18,92,22);ctx.fillStyle="#1f2937";ctx.fillText(`+${series.length-series.indexOf(s)} more`,cx+12,cy-3);break;}const c=colorMap[s.color]||s.color||"#0072bd";ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,w,22);ctx.strokeStyle="#7c8795";ctx.lineWidth=1;ctx.strokeRect(cx-6,cy-18,w,22);ctx.fillStyle=c;ctx.fillRect(cx+22,cy-12,14,8);ctx.fillStyle="#111827";ctx.fillText(label,cx+72,cy-3);cx+=w+14;}return y+rows*24;}
 
+    const aiProviderKey="fsg2300.aiProvider";
     const apiKeyPrefix="fsg2300.aiKey.";
+    function saveAIProvider(){try{localStorage.setItem(aiProviderKey,$("cboProvider").value||"");}catch{}}
+    function restoreAIProvider(){try{const saved=localStorage.getItem(aiProviderKey);if(!saved)return;const sel=$("cboProvider"),match=[...sel.options].find(o=>o.value===saved||o.textContent===saved);if(match)sel.value=match.value;}catch{}}
+    function providerChanged(){saveAIProvider();restoreApiKey();}
     function aiKeyStorageKey(){return `${apiKeyPrefix}${$("cboProvider").value||"default"}`;}
     function aiKeyText(){return state.lang==="en"?{saved:"Saved locally",cleared:"Cleared",empty:"No key entered",clear:"Clear Key",ready:"Ready"}:state.lang==="cn"?{saved:"已储存在本机",cleared:"已清除",empty:"尚未输入金钥",clear:"清除密钥",ready:"就绪"}:{saved:"已儲存在本機",cleared:"已清除",empty:"尚未輸入金鑰",clear:"清除金鑰",ready:"就緒"};}
     function loadStoredApiKey(){try{return localStorage.getItem(aiKeyStorageKey())||"";}catch{return "";}}
@@ -671,10 +675,11 @@
     $("btnLangZhTW").addEventListener("click",()=>applyLanguage("tw"));
     $("btnLangZhCN").addEventListener("click",()=>applyLanguage("cn"));
     $("btnLangEn").addEventListener("click",()=>applyLanguage("en"));
-    $("cboProvider").addEventListener("change",restoreApiKey);
+    $("cboProvider").addEventListener("change",providerChanged);
     $("btnSaveKey").addEventListener("click",saveApiKey);
     $("btnClearKey").addEventListener("click",clearApiKey);
     $("btnGenAI").addEventListener("click",()=>{renderAISeed();$("lblAIStatus").textContent="完成";});
+    restoreAIProvider();
     restoreApiKey();
     window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();});
   </script>
