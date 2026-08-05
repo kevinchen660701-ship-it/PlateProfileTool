@@ -1387,12 +1387,14 @@
       const sweepPx = platePixels * machineGeometry.jigSweep / machineGeometry.plateOD;
       const sweepHz = clamp(jigRpm / 180, 0.04, 0.38);
       const sweepPhase = now / 1000 * sweepHz * Math.PI * 2;
+      const swing = Math.sin(sweepPhase) * sweepPx * jigActivity;
       jigHolders.forEach((holder, index) => {
-        const sweepOffset = Math.sin(sweepPhase + index * 2.09) * sweepPx * jigActivity;
         if (index === 0) {
-          holder.style.transform = `translate(-50%, -50%) translateY(${(sweepOffset * 0.62).toFixed(1)}px)`;
-        } else {
-          holder.style.transform = `translate(-50%, -50%) translateX(${sweepOffset.toFixed(1)}px)`;
+          holder.style.transform = `translate(-50%, -50%) translateY(${(-swing * 0.62).toFixed(1)}px)`;
+        } else if (index === 1) {
+          holder.style.transform = `translate(-50%, -50%) translateX(${(-swing).toFixed(1)}px)`;
+        } else if (index === 2) {
+          holder.style.transform = `translate(-50%, -50%) translateX(${swing.toFixed(1)}px)`;
         }
       });
       jigRotors.forEach((rotor, index) => {
