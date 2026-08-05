@@ -338,6 +338,7 @@
               <label>AI 服務：</label><select id="cboProvider"><option>Google Gemini</option><option>Anthropic Claude</option><option>OpenRouter</option></select>
               <label>API Key：</label><input id="txtApiKey" type="password">
               <button id="btnSaveKey">儲存金鑰</button>
+              <button id="btnClearKey">清除金鑰</button>
               <button id="btnGenAI">產生 AI 建議</button>
               <span id="lblAIStatus">就緒</span>
             </div>
@@ -645,6 +646,15 @@
     function legendRows(ctx,series,x,maxW){ctx.font="12px Consolas, monospace";let cx=x,rows=1;for(const s of series){const w=Math.max(140,Math.min(320,ctx.measureText(finalLegendLabel(s)).width+96));if(cx+w>maxW&&rows<2){cx=x;rows++;}cx+=w+14;}return rows;}
     function drawLegend(ctx,series,x,y,maxW){ctx.font="12px Consolas, monospace";ctx.textBaseline="alphabetic";let cx=x,cy=y,rows=1;for(const s of series){const label=finalLegendLabel(s),tw=ctx.measureText(label).width,w=Math.max(140,Math.min(320,tw+96));if(cx+w>maxW&&rows<2){cx=x;cy+=24;rows++;}if(cx+w>maxW&&rows>=2){ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,92,22);ctx.strokeStyle="#4b5563";ctx.strokeRect(cx-6,cy-18,92,22);ctx.fillStyle="#1f2937";ctx.fillText(`+${series.length-series.indexOf(s)} more`,cx+12,cy-3);break;}const c=colorMap[s.color]||s.color||"#0072bd";ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,w,22);ctx.strokeStyle="#7c8795";ctx.lineWidth=1;ctx.strokeRect(cx-6,cy-18,w,22);ctx.fillStyle=c;ctx.fillRect(cx+22,cy-12,14,8);ctx.fillStyle="#111827";ctx.fillText(label,cx+72,cy-3);cx+=w+14;}return y+rows*24;}
 
+    const apiKeyPrefix="fsg2300.aiKey.";
+    function aiKeyStorageKey(){return `${apiKeyPrefix}${$("cboProvider").value||"default"}`;}
+    function aiKeyText(){return state.lang==="en"?{saved:"Saved locally",cleared:"Cleared",empty:"No key entered",clear:"Clear Key",ready:"Ready"}:state.lang==="cn"?{saved:"已储存在本机",cleared:"已清除",empty:"尚未输入金钥",clear:"清除密钥",ready:"就绪"}:{saved:"已儲存在本機",cleared:"已清除",empty:"尚未輸入金鑰",clear:"清除金鑰",ready:"就緒"};}
+    function loadStoredApiKey(){try{return localStorage.getItem(aiKeyStorageKey())||"";}catch{return "";}}
+    function restoreApiKey(){const key=loadStoredApiKey();$("txtApiKey").value=key;$("lblAIStatus").textContent=key?aiKeyText().saved:aiKeyText().ready;}
+    function saveApiKey(){const value=$("txtApiKey").value.trim(),t=aiKeyText();if(!value){$("lblAIStatus").textContent=t.empty;return;}try{localStorage.setItem(aiKeyStorageKey(),value);$("lblAIStatus").textContent=t.saved;}catch{$("lblAIStatus").textContent=t.empty;}}
+    function clearApiKey(){try{localStorage.removeItem(aiKeyStorageKey());}catch{}$("txtApiKey").value="";$("lblAIStatus").textContent=aiKeyText().cleared;}
+    function applyLanguage(lang){state.lang=lang;const t=tr[lang],l=L();$("btnBatch").textContent=t.btnBatch;$("btnWafer").textContent=t.btnWafer;$("btnPPT").textContent=t.btnPPT;document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=t.tabs[i]);document.querySelector('[data-sub="singleG1"]').textContent=t.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=t.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;$("btnSaveKey").textContent=t.saveKey;$("btnGenAI").textContent=t.genAI;$("btnClearKey").textContent=aiKeyText().clear;$("lblAIStatus").textContent=loadStoredApiKey()?aiKeyText().saved:t.ready;if(!$("lblPath").textContent||["尚未載入","尚未载入","Not loaded"].includes($("lblPath").textContent))$("lblPath").textContent=l.notLoaded;setStaticLanguage();renderAll();renderSeq();renderPar();}
+
     $("btnBatch").addEventListener("click", ()=>$("folderInput").click());
     $("btnWafer").addEventListener("click", ()=>$("singleFileInput").click());
     $("btnPPT").addEventListener("click", exportPptx);
@@ -661,8 +671,11 @@
     $("btnLangZhTW").addEventListener("click",()=>applyLanguage("tw"));
     $("btnLangZhCN").addEventListener("click",()=>applyLanguage("cn"));
     $("btnLangEn").addEventListener("click",()=>applyLanguage("en"));
-    $("btnSaveKey").addEventListener("click",()=>$("lblAIStatus").textContent="完成");
+    $("cboProvider").addEventListener("change",restoreApiKey);
+    $("btnSaveKey").addEventListener("click",saveApiKey);
+    $("btnClearKey").addEventListener("click",clearApiKey);
     $("btnGenAI").addEventListener("click",()=>{renderAISeed();$("lblAIStatus").textContent="完成";});
+    restoreApiKey();
     window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();});
   </script>
 </body>
