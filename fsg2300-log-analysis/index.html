@@ -663,12 +663,13 @@
 
     function drawLines(canvas,series,xLabel,yLabel,title,options={}){
       const {ctx,w,h}=setupCanvas(canvas),ss=chartSeries(series);
+      const stripLines=(options.stripLines||[]).filter(s=>Number.isFinite(s.value));
       const gridColor="#bcc7d3",axisColor="#202936",compact=h<380;
       ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);
       ctx.font="14px Microsoft JhengHei UI, Arial";ctx.fillStyle="#1f2937";ctx.textAlign="center";ctx.fillText(title||"",w/2,compact?18:22);
       const legendX=96,legendY=compact?44:60,rows=legendRows(ctx,ss,legendX,w-34);
       const pad={l:76,r:34,t:Math.max(compact?78:110,legendY+rows*24+(compact?4:12)),b:compact?46:62};
-      const pw=Math.max(50,w-pad.l-pad.r),ph=Math.max(50,h-pad.t-pad.b),pts=ss.flatMap(s=>s.points);
+      const pw=Math.max(50,w-pad.l-pad.r),ph=Math.max(50,h-pad.t-pad.b),pts=ss.flatMap(s=>s.points),yValues=pts.map(p=>p.y).concat(stripLines.map(s=>s.value));
       ctx.fillStyle="#374151";ctx.font="12px Consolas, monospace";
       ctx.save();ctx.translate(18,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText(yLabel||"",0,0);ctx.restore();
       ctx.textAlign="center";ctx.fillText(xLabel||"",pad.l+pw/2,h-(compact?8:14));
@@ -678,7 +679,7 @@
       if(pts.length){
         if(!Number.isFinite(options.xMin))xMin=min(pts.map(p=>p.x));
         if(!Number.isFinite(options.xMax))xMax=max(pts.map(p=>p.x));
-        const rawYMin=min(pts.map(p=>p.y)),rawYMax=max(pts.map(p=>p.y));
+        const rawYMin=min(yValues),rawYMax=max(yValues);
         if(waferAxis){xMin=Math.floor(xMin);xMax=Math.ceil(xMax);}
         if(xMin===xMax){xMin-=1;xMax+=1;}
         if(!waferAxis&&!Number.isFinite(options.xMin)&&!Number.isFinite(options.xMax)){const xp=(xMax-xMin)*.025;xMin-=xp;xMax+=xp;}
@@ -714,6 +715,13 @@
       for(const value of xTicks){const xx=sx(value);if(xx>=pad.l-1&&xx<=w-pad.r+1)ctx.fillText(waferAxis?waferTick(value):oneDecimal(value),xx,h-(compact?24:36));}
       if(!pts.length){ctx.fillStyle="#606a76";ctx.fillText(L().noData,pad.l+pw/2,pad.t+ph/2);drawLegend(ctx,ss,legendX,legendY,w-34);ctx.textAlign="left";return;}
       ctx.save();ctx.beginPath();ctx.rect(pad.l,pad.t,pw,ph);ctx.clip();
+      stripLines.forEach(s=>{
+        const c=colorMap[s.color]||s.color||"#0072bd",yy=sy(s.value);
+        ctx.strokeStyle=c;ctx.lineWidth=2;
+        if(ctx.setLineDash)ctx.setLineDash(s.dash||[7,4]);
+        ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();
+      });
+      if(ctx.setLineDash)ctx.setLineDash([]);
       ss.forEach(s=>{
         const c=colorMap[s.color]||s.color||"#0072bd";
         ctx.strokeStyle=c;ctx.lineWidth=2;
@@ -721,7 +729,33 @@
         ctx.beginPath();s.points.forEach((pt,j)=>j?ctx.lineTo(sx(pt.x),sy(pt.y)):ctx.moveTo(sx(pt.x),sy(pt.y)));ctx.stroke();
       });
       if(ctx.setLineDash)ctx.setLineDash([]);
-      ctx.restore();drawLegend(ctx,ss,legendX,legendY,w-34);ctx.textAlign="left";
+      ctx.restore();
+      stripLines.forEach(s=>{
+        const c=colorMap[s.color]||s.color||"#0072bd",yy=sy(s.value),label=String(s.label||"");
+        if(!label||yy<pad.t-1||yy>h-pad.b+1)return;
+        ctx.font="12px Microsoft JhengHei UI, Arial";ctx.textAlign="left";ctx.fillStyle="#fff";
+        const tx=pad.l+4,ty=yy-5,tw=ctx.measureText(label).width;
+        ctx.fillRect(tx-2,ty-11,tw+4,14);
+        ctx.fillStyle="#111827";ctx.fillText(label,tx,ty);
+      });
+      drawLegend(ctx,ss,legendX,legendY,w-34);ctx.textAlign="left";
+    }
+
+    function removalTargetLabels(){return state.lang==="en"?{g1:"G1 Target",g2:"G2 Target"}:state.lang==="cn"?{g1:"G1 设定",g2:"G2 设定"}:{g1:"G1 設定",g2:"G2 設定"};}
+    function removalTargetLines(){
+      const i=state.info||{},labels=removalTargetLabels(),g1=num(i.g1RemoveValue1)+(int(i.g1TotalStep)>=2?num(i.g1RemoveValue2):0),g2=num(i.g2RemoveValue1)+(int(i.g2TotalStep)>=2?num(i.g2RemoveValue2):0),lines=[];
+      if(g1>0)lines.push({label:labels.g1,value:g1,color:"g1"});
+      if(g2>0)lines.push({label:labels.g2,value:g2,color:"g2"});
+      return lines;
+    }
+    function renderRemoval(){
+      const l=L(),names=removalLegendLabels(),g1=okSeries("G1","g1Removal"),g2=okSeries("G2","g2Removal");
+      drawLines($("chtRemoval"),[{name:names.g1,legendName:names.g1,color:"g1",points:g1},{name:names.g2,legendName:names.g2,color:"g2",points:g2}],l.wafer,`${l.removal} (${l.um})`,l.removalTitle,{stripLines:removalTargetLines()});
+      $("dgvRemovalStats").innerHTML=table([l.stat,l.avg,l.std,l.max,l.min,l.count],[statRow("G1",g1.map(p=>p.y)),statRow("G2",g2.map(p=>p.y))]);
+    }
+    function renderRemovalChartOnly(c){
+      const l=L(),names=removalLegendLabels();
+      drawLines(c,[{name:names.g1,legendName:names.g1,color:"g1",points:okSeries("G1","g1Removal")},{name:names.g2,legendName:names.g2,color:"g2",points:okSeries("G2","g2Removal")}],l.wafer,`${l.removal} (${l.um})`,l.removalTitle,{stripLines:removalTargetLines()});
     }
 
     function renderTime(){
