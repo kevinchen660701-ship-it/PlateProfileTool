@@ -703,11 +703,14 @@
       }else{
         for(let i=0;i<=5;i++)yTicks.push(yMax-i*(yMax-yMin)/5);
       }
-      if(Array.isArray(options.extraYTicks)){
-        for(const v of options.extraYTicks)if(Number.isFinite(v)&&v>=yMin&&v<=yMax)yTicks.push(v);
-      }
-      yTicks=yTicks.sort((a,b)=>b-a).filter((v,i,a)=>i===0||Math.abs(v-a[i-1])>.0005);
       const sx=x=>pad.l+((x-xMin)/(xMax-xMin||1))*pw,sy=y=>pad.t+ph-((y-yMin)/(yMax-yMin||1))*ph;
+      const extraYTicks=Array.isArray(options.extraYTicks)?options.extraYTicks.filter(v=>Number.isFinite(v)&&v>=yMin&&v<=yMax):[];
+      if(extraYTicks.length){
+        const minGap=Number.isFinite(options.yLabelMinGap)?options.yLabelMinGap:18;
+        yTicks=yTicks.filter(v=>!extraYTicks.some(ev=>Math.abs(sy(ev)-sy(v))<minGap&&Math.abs(ev-v)>.0000005));
+        yTicks=yTicks.concat(extraYTicks);
+      }
+      yTicks=yTicks.sort((a,b)=>b-a).filter((v,i,a)=>i===0||Math.abs(sy(v)-sy(a[i-1]))>=10||Math.abs(v-a[i-1])>.0005);
       const yDecimals=Number.isFinite(options.yDecimals)?Math.max(0,Math.min(6,Math.round(options.yDecimals))):null;
       const yTickLabel=v=>options.yInteger?String(Math.round(v)):yDecimals!==null?Number(v).toFixed(yDecimals):oneDecimal(v);
       ctx.strokeStyle=gridColor;ctx.lineWidth=1;
