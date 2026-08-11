@@ -703,8 +703,13 @@
       }else{
         for(let i=0;i<=5;i++)yTicks.push(yMax-i*(yMax-yMin)/5);
       }
+      if(Array.isArray(options.extraYTicks)){
+        for(const v of options.extraYTicks)if(Number.isFinite(v)&&v>=yMin&&v<=yMax)yTicks.push(v);
+      }
+      yTicks=yTicks.sort((a,b)=>b-a).filter((v,i,a)=>i===0||Math.abs(v-a[i-1])>.0005);
       const sx=x=>pad.l+((x-xMin)/(xMax-xMin||1))*pw,sy=y=>pad.t+ph-((y-yMin)/(yMax-yMin||1))*ph;
-      const yTickLabel=v=>options.yInteger?String(Math.round(v)):oneDecimal(v);
+      const yDecimals=Number.isFinite(options.yDecimals)?Math.max(0,Math.min(6,Math.round(options.yDecimals))):null;
+      const yTickLabel=v=>options.yInteger?String(Math.round(v)):yDecimals!==null?Number(v).toFixed(yDecimals):oneDecimal(v);
       ctx.strokeStyle=gridColor;ctx.lineWidth=1;
       for(const value of yTicks){const yy=sy(value);if(yy>=pad.t-1&&yy<=h-pad.b+1){ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();}}
       for(const value of xTicks){const xx=sx(value);if(xx>=pad.l-1&&xx<=w-pad.r+1){ctx.beginPath();ctx.moveTo(xx,pad.t);ctx.lineTo(xx,h-pad.b);ctx.stroke();}}
@@ -767,6 +772,8 @@
         {name:l.g2Wait,color:"purple",dashed:true,points:state.records.map(r=>({x:r.wafer,y:r.waitG2||0}))}
       ],l.wafer,`${l.timeTitle.includes("Time")?"Time":l.sec}`,l.timeTitle,{yInteger:true});
     }
+
+    function renderWear(){const l=L(),g1=wearSeriesData("g1"),g2=wearSeriesData("g2");$("lblWearInfo").textContent=`  G1 ${l.wear}: ${fmt(g1.average,5)}    G2 ${l.wear}: ${fmt(g2.average,5)}    (= SWear / Removal, ${l.wearNote})`;drawLines($("chtWearG1Full"),[{name:l.perWafer,color:"g1",points:g1.points},{name:l.average,color:"orange",points:flatLine(g1.points,g1.average)}],l.wafer,l.wearY,`G1 ${l.wear}`,{yDecimals:3,extraYTicks:[g1.average]});drawLines($("chtWearG2Full"),[{name:l.perWafer,color:"g2",points:g2.points},{name:l.average,color:"orange",points:flatLine(g2.points,g2.average)}],l.wafer,l.wearY,`G2 ${l.wear}`,{yDecimals:3,extraYTicks:[g2.average]});}
 
     const aiProviderKey="fsg2300.aiProvider";
     const apiKeyPrefix="fsg2300.aiKey.";
