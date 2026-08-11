@@ -350,7 +350,7 @@
   </div>
 
   <script>
-    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw" };
+    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null };
     const $ = id => document.getElementById(id);
     const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v.toFixed(d)).toString() : "-";
     const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN;
@@ -501,7 +501,7 @@
     function quantile(values,q){if(!values.length)return NaN;const a=[...values].sort((x,y)=>x-y);const pos=(a.length-1)*q,base=Math.floor(pos),rest=pos-base;return a[base+1]!=null?a[base]+rest*(a[base+1]-a[base]):a[base];}
     function drawBox(canvas, groups, title){const {ctx,w,h}=setupCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.font="13px Microsoft JhengHei UI, Arial";ctx.fillStyle="#222";ctx.fillText(title,12,18);const pad={l:50,r:20,t:38,b:72};const all=groups.flatMap(g=>g.values);ctx.strokeStyle="#d9e0e8";for(let i=0;i<=5;i++){const y=pad.t+i*((h-pad.t-pad.b)/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}if(!all.length){ctx.fillText("No data",w/2-24,h/2);return;}const yMin=min(all),yMax=max(all);const sy=y=>h-pad.b-((y-yMin)/(yMax-yMin||1))*(h-pad.t-pad.b);const slot=(w-pad.l-pad.r)/groups.length;groups.forEach((g,i)=>{const v=g.values;if(!v.length)return;const q1=quantile(v,.25),q2=quantile(v,.5),q3=quantile(v,.75),lo=min(v),hi=max(v),m=avg(v);const x=pad.l+i*slot+slot/2;ctx.strokeStyle="#0072bd";ctx.fillStyle="rgba(0,114,189,.12)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,sy(lo));ctx.lineTo(x,sy(hi));ctx.stroke();ctx.fillRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeStyle="#c03030";ctx.beginPath();ctx.moveTo(x-slot*.25,sy(q2));ctx.lineTo(x+slot*.25,sy(q2));ctx.stroke();ctx.fillStyle="#2fa84f";ctx.beginPath();ctx.arc(x,sy(m),3,0,Math.PI*2);ctx.fill();ctx.save();ctx.translate(x-12,h-15);ctx.rotate(-Math.PI/4);ctx.fillStyle="#606a76";ctx.font="11px Consolas, monospace";ctx.fillText(g.label,0,0);ctx.restore();});}
 
-    function activateTab(id){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));setTimeout(()=>{renderAll(); if(id==="loadseq") renderSeq(); if(id==="loadpar") renderPar();},25);}
+    function activateTab(id){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));setTimeout(()=>{renderAll(); if(id==="loadseq") renderSeq(); if(id==="loadpar") renderPar(); if(id==="single") renderSingleWaferCharts();},25);}
     function applyLanguage(lang){state.lang=lang;const l=tr[lang];$("btnBatch").textContent=l.btnBatch;$("btnWafer").textContent=l.btnWafer;$("btnPPT").textContent=l.btnPPT;document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=l.tabs[i]);document.querySelector('[data-sub="singleG1"]').textContent=l.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=l.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;if($("lblPath").textContent==="尚未載入"||$("lblPath").textContent==="尚未载入"||$("lblPath").textContent==="Not loaded")$("lblPath").textContent=l.notLoaded;$("btnSaveKey").textContent=l.saveKey;$("btnGenAI").textContent=l.genAI;$("lblAIStatus").textContent=l.ready;renderAll();}
     function exportPptx(){if(!state.records.length)return;const slides=buildPptSlides();const files=makePptxFiles(slides);const blob=new Blob([zipStore(files)],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});downloadBlob(blob,`FSG2300_Analysis_${new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)}.pptx`);}
     function buildPptSlides(){const i=state.info||{};const g1=okSeries("G1","g1Removal").map(p=>p.y),g2=okSeries("G2","g2Removal").map(p=>p.y);const slides=[
@@ -633,7 +633,9 @@
     function renderThickness(){const l=L(),s=[];if($("chkThickG1").checked)s.push({name:l.g1Thick,color:"#004c99",points:okSeries("G1","g1LastWaferMin")});if($("chkThickG2").checked)s.push({name:l.g2Thick,color:"#d81e05",points:okSeries("G2","g2LastWaferMin")});drawLines($("chtThickness"),s,l.wafer,l.thickY,l.thicknessTitle);}
     function renderSeq(){if(!state.seqLoaded)return;const l=L();drawLines($("chtLoadingSeqG1"),sequenceSeries("g1",20),"sec",l.loadingY,`G1 ${l.g1Rough.replace(/^G1\s*/,"")} ${l.seqTitle}`);drawLines($("chtLoadingSeqG2"),sequenceSeries("g2",20),"sec",l.loadingY,`G2 ${l.g2Fine.replace(/^G2\s*/,"")} ${l.seqTitle}`);}
     function renderPar(){if(!state.seqLoaded)return;const l=L(),selected=[...document.querySelectorAll(".chkPar")].filter(x=>x.checked).map(x=>int(x.value));drawLines($("chtLoadingParG1"),parallelSeries("g1",selected),"sec",l.loadingY,`G1 ${l.g1Rough.replace(/^G1\s*/,"")} ${l.parTitle}`);drawLines($("chtLoadingParG2"),parallelSeries("g2",selected),"sec",l.loadingY,`G2 ${l.g2Fine.replace(/^G2\s*/,"")} ${l.parTitle}`);}
-    async function loadSingleWafer(file){if(!file)return;const l=L();$("lblPath").textContent=file.name;const data=await parseWafer(file);$("txtSingleFile").value=file.name;drawSingleChart($("chtSingleG1"),data.g1Steps,`${l.g1Rough}  Chuck#${data.chuck||"-"}  ${l.income}=${fmt(data.g1Income,1)}um  ${l.result}:${data.g1Result||"-"}`);drawSingleChart($("chtSingleG2"),data.g2Steps,`${l.g2Fine}  Chuck#${data.chuck||"-"}  ${l.income}=${fmt(data.g2Income,1)}um  ${l.result}:${data.g2Result||"-"}`);activateTab("single");}
+    async function loadSingleWafer(file){if(!file)return;$("lblPath").textContent=file.name;const data=await parseWafer(file);state.singleData=data;$("txtSingleFile").value=file.name;activateTab("single");setTimeout(renderSingleWaferCharts,35);}
+    function activeSingleId(){return $("singleG2")?.classList?.contains?.("active")?"singleG2":"singleG1";}
+    function renderSingleWaferCharts(){const data=state.singleData;if(!data)return;const l=L(),g2=activeSingleId()==="singleG2";drawSingleChart($(g2?"chtSingleG2":"chtSingleG1"),g2?data.g2Steps:data.g1Steps,`${g2?l.g2Fine:l.g1Rough}  Chuck#${data.chuck||"-"}  ${l.income}=${fmt(g2?data.g2Income:data.g1Income,1)}um  ${l.result}:${(g2?data.g2Result:data.g1Result)||"-"}`);}
     async function loadWaferFromBatch(){const l=L();if(!state.records.length)return alert(l.alertBatch);const n=int($("nudWaferNo").value),f=findWaferFile(n);if(!f)return alert(`${l.alertWafer} W${String(n).padStart(4,"0")}`);await loadSingleWafer(f);}
     function legendRows(ctx,series,x,maxW){ctx.font="12px Consolas, monospace";let cx=x,rows=1;for(const s of series){const w=Math.min(230,ctx.measureText(roughFineName(s.name)).width+42);if(cx+w>maxW&&rows<2){cx=x;rows++;}cx+=w+14;}return rows;}
     function drawLegend(ctx,series,x,y,maxW){ctx.font="12px Consolas, monospace";ctx.textBaseline="alphabetic";let cx=x,cy=y,rows=1;for(const s of series){const label=roughFineName(s.name),tw=ctx.measureText(label).width,w=Math.min(230,tw+42);if(cx+w>maxW&&rows<2){cx=x;cy+=24;rows++;}if(cx+w>maxW&&rows>=2){ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,78,22);ctx.strokeStyle="#4b5563";ctx.strokeRect(cx-6,cy-18,78,22);ctx.fillStyle="#1f2937";ctx.fillText(`+${series.length-series.indexOf(s)} more`,cx,cy-3);break;}const c=colorMap[s.color]||s.color||"#0072bd";ctx.fillStyle="#fff";ctx.fillRect(cx-6,cy-18,w,22);ctx.strokeStyle="#7c8795";ctx.lineWidth=1;ctx.strokeRect(cx-6,cy-18,w,22);ctx.fillStyle=c;ctx.fillRect(cx,cy-12,18,8);ctx.fillStyle=c;ctx.fillText(label,cx+26,cy-3);cx+=w+14;}return y+rows*24;}
@@ -813,20 +815,20 @@
     $("btnOpenSingle").addEventListener("click", ()=>$("singleFileInput").click());
     $("btnLoadWafer").addEventListener("click", ()=>loadWaferFromBatch().catch(err=>alert(err.message||String(err))));
     document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>activateTab(b.dataset.tab)));
-    document.querySelectorAll(".subtab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".subtab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".subpage").forEach(p=>p.classList.toggle("active",p.id===b.dataset.sub));}));
+    document.querySelectorAll(".subtab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".subtab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".subpage").forEach(p=>p.classList.toggle("active",p.id===b.dataset.sub));setTimeout(renderSingleWaferCharts,35);}));
     ["chkLoadChuck1","chkLoadChuck2","chkLoadChuck3","chkLoadOverall","chkThickG1","chkThickG2"].forEach(id=>$(id).addEventListener("change",renderAll));
     document.querySelectorAll(".chkPar").forEach(x=>x.addEventListener("change",renderPar));
     $("chkParSmooth").addEventListener("change",renderPar);
-    $("btnLangZhTW").addEventListener("click",()=>applyLanguage("tw"));
-    $("btnLangZhCN").addEventListener("click",()=>applyLanguage("cn"));
-    $("btnLangEn").addEventListener("click",()=>applyLanguage("en"));
+    $("btnLangZhTW").addEventListener("click",()=>{applyLanguage("tw");setTimeout(renderSingleWaferCharts,35);});
+    $("btnLangZhCN").addEventListener("click",()=>{applyLanguage("cn");setTimeout(renderSingleWaferCharts,35);});
+    $("btnLangEn").addEventListener("click",()=>{applyLanguage("en");setTimeout(renderSingleWaferCharts,35);});
     $("cboProvider").addEventListener("change",providerChanged);
     $("btnSaveKey").addEventListener("click",saveApiKey);
     $("btnClearKey").addEventListener("click",clearApiKey);
     $("btnGenAI").addEventListener("click",generateAIRecommendation);
     restoreAIProvider();
     restoreApiKey();
-    window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();});
+    window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();setTimeout(renderSingleWaferCharts,35);});
   </script>
 </body>
 </html>
