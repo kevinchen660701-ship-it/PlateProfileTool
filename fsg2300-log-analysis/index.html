@@ -246,6 +246,9 @@
     .wearinfo { display: flex; align-items: center; padding-left: 6px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, monospace; }
     .s1check { height: 100%; display: grid; grid-template-rows: 190px minmax(0, 1fr); background: #fff; }
     .s1summary { display: flex; align-items: center; gap: 14px; height: 32px; padding: 0 8px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, "Microsoft JhengHei", monospace; }
+    .s1summary span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .s1summary button { height: 24px; padding: 1px 12px; border: 1px solid #9aa8ba; background: linear-gradient(#fff, #e8edf4); color: #111827; font: 13px "Microsoft JhengHei UI", Arial; cursor: pointer; }
+    .s1summary button:disabled { opacity: .55; cursor: not-allowed; }
     .s1check > div:first-child { min-height: 0; overflow: hidden; }
     .s1results { height: calc(100% - 32px); overflow-y: auto; overflow-x: auto; scrollbar-gutter: stable; border-bottom: 1px solid #c8d0da; }
     .s1results tr { cursor: pointer; }
@@ -284,7 +287,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.6</div>
+      <div id="lblVersion">v1.7.7</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -376,7 +379,7 @@
         <section id="s1check" class="page">
           <div class="s1check">
             <div>
-              <div id="lblS1PeakSummary" class="s1summary">尚未執行 S1 peak檢查</div>
+              <div class="s1summary"><span id="lblS1PeakSummary">尚未執行 S1 peak檢查</span><button id="btnS1PeakPPT" disabled>產出 PPT</button></div>
               <div id="dgvS1PeakResults" class="s1results"></div>
             </div>
             <div class="s1chartwrap">
@@ -883,6 +886,7 @@
       state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,chartToken:(state.s1PeakCheck.chartToken||0)+1};
       activateTab("s1check");
       $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}`;
+      $("btnS1PeakPPT").disabled=true;
       $("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>S1 peak檢查中...</td></tr></tbody></table>';
       $("lblS1PeakChart").textContent="S1 peak檢查中...";
       await waitUiPaint();
@@ -933,6 +937,7 @@
     function renderS1PeakResults(){
       const s=state.s1PeakCheck,items=s.items||[];
       $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  總晶片數 ${s.totalWafers||0}  異常 ${items.length} 筆`;
+      $("btnS1PeakPPT").disabled=!items.length;
       if(!items.length){$("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>未找到異常 peak</td></tr></tbody></table>';return;}
       const rows=items.map((x,i)=>`<tr data-s1idx="${i}" class="${i===s.selected?"active":""}"><td>${i+1}</td><td>${escHtml(x.folder)}</td><td>${escHtml(x.fileName)}</td><td>W${String(x.wafer).padStart(4,"0")}</td><td>${x.g}</td><td>C${x.ch||"-"}</td><td>${escHtml(x.result)}</td><td>${fmt(x.sec,1)}</td><td>${fmt(x.peak,1)}</td><td>${fmt(x.baseline,1)}</td><td>${fmt(x.delta,1)}</td><td>${escHtml(x.reason||"")}</td></tr>`).join("");
       $("dgvS1PeakResults").innerHTML=`<table><thead><tr><th>#</th><th>所在資料夾</th><th>檔案</th><th>Wafer</th><th>站別</th><th>Chuck</th><th>結果</th><th>秒</th><th>S1 Peak</th><th>基準</th><th>差異</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -953,6 +958,51 @@
         if(token===state.s1PeakCheck.chartToken)$("lblS1PeakChart").textContent=`${title}  載入失敗：${err.message||String(err)}`;
       }
     }
+    function s1PptSafeName(v){return String(v||"S1Peak").replace(/[\\/:*?"<>|]/g,"_").slice(0,80);}
+    function s1PeakPptRows(items){return items.map((x,i)=>[i+1,`${x.folder}/${x.fileName}`,`W${String(x.wafer).padStart(4,"0")}`,`${x.g} C${x.ch||"-"}`,x.result,fmt(x.sec,1),fmt(x.peak,1),fmt(x.baseline,1),fmt(x.delta,1),x.reason||""]);}
+    async function s1PeakPptChart(item){
+      const d=item.data||await parseS1PeakWaferFile(item.fileRef),l=L();
+      return pptChart(c=>{
+        const make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
+        drawLines(c,[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}],procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`);
+      });
+    }
+    async function buildS1PeakPptSlides(items){
+      const s=state.s1PeakCheck,folder=s.folderName||"",slides=[{title:"S1 peak檢查報告",isTitle:true,subtitle:"FSG2300 Log Analysis",lines:[`Folder: ${folder}`,`Total Wafers: ${s.totalWafers||0}`,`Abnormal Peaks: ${items.length}`,`Export Time: ${fmtDate(new Date())}`]}];
+      const rows=s1PeakPptRows(items),headers=["#","資料夾 / 檔案","Wafer","站別","結果","秒","Peak","基準","差異","判定"];
+      chunkLines(rows,14).forEach((chunk,i)=>slides.push({title:`S1 peak異常清單${i?` (${i+1})`:""}`,table:{headers,rows:chunk,colRatios:[.05,.29,.09,.08,.07,.08,.09,.08,.08,.09],rowH:310000,fontSize:720}}));
+      for(let i=0;i<items.length;i++){
+        const x=items[i];
+        $("lblS1PeakSummary").textContent=`S1 peak PPT產出中... 圖表 ${i+1} / ${items.length}  W${String(x.wafer).padStart(4,"0")} ${x.g}`;
+        if(i%3===0)await waitUiPaint();
+        slides.push({title:`S1 peak圖形 #${i+1}  W${String(x.wafer).padStart(4,"0")} ${x.g} C${x.ch||"-"}`,subtitle:`${x.folder}/${x.fileName}    sec=${fmt(x.sec,1)}    Peak=${fmt(x.peak,1)}    基準=${fmt(x.baseline,1)}    差異=${fmt(x.delta,1)}    ${x.reason||""}`,images:[await s1PeakPptChart(x)]});
+      }
+      return slides;
+    }
+    async function exportS1PeakPptx(){
+      const items=state.s1PeakCheck.items||[];
+      if(!items.length){alert("沒有 S1 peak 異常資料可輸出。");return;}
+      const btn=$("btnS1PeakPPT"),oldDisabled=btn.disabled;btn.disabled=true;
+      try{
+        const name=`FSG2300_S1Peak_${s1PptSafeName(state.s1PeakCheck.folderName)}_${new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)}.pptx`;
+        $("lblS1PeakSummary").textContent=`S1 peak PPT產出中... 建立摘要`;
+        await waitUiPaint();
+        const slides=await buildS1PeakPptSlides(items),files=makePptxFiles(slides),blob=new Blob([zipStore(files)],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
+        if(window.showSaveFilePicker){
+          let handle=null;
+          try{handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:"PowerPoint",accept:{"application/vnd.openxmlformats-officedocument.presentationml.presentation":[".pptx"]}}]});}catch(err){if(err&&err.name==="AbortError"){renderS1PeakResults();return;}throw err;}
+          const writable=await handle.createWritable();await writable.write(blob);await writable.close();
+        }else{
+          downloadBlob(blob,name);
+          await new Promise(resolve=>setTimeout(resolve,800));
+        }
+        renderS1PeakResults();
+        alert(pptExportDoneText());
+      }catch(err){
+        renderS1PeakResults();
+        alert(`S1 peak PPT輸出失敗：${err.message||String(err)}`);
+      }finally{btn.disabled=oldDisabled&&!(state.s1PeakCheck.items||[]).length;}
+    }
 
     const aiProviderKey="fsg2300.aiProvider";
     const apiKeyPrefix="fsg2300.aiKey.";
@@ -965,7 +1015,7 @@
     function restoreApiKey(){const key=loadStoredApiKey();$("txtApiKey").value=key;$("lblAIStatus").textContent=key?aiKeyText().saved:aiKeyText().ready;}
     function saveApiKey(){const value=$("txtApiKey").value.trim(),t=aiKeyText();if(!value){$("lblAIStatus").textContent=t.empty;return;}try{localStorage.setItem(aiKeyStorageKey(),value);$("lblAIStatus").textContent=t.saved;}catch{$("lblAIStatus").textContent=t.empty;}}
     function clearApiKey(){try{localStorage.removeItem(aiKeyStorageKey());}catch{}$("txtApiKey").value="";$("lblAIStatus").textContent=aiKeyText().cleared;}
-    function applyLanguage(lang){state.lang=lang;const t=tr[lang],l=L();$("btnBatch").textContent=t.btnBatch;$("btnWafer").textContent=t.btnWafer;$("btnPPT").textContent=t.btnPPT;$("btnS1Peak").textContent=lang==="en"?"S1 Peak Check":"S1 peak檢查";document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=t.tabs[i]||b.textContent||"S1 peak檢查");document.querySelector('[data-sub="singleG1"]').textContent=t.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=t.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;$("btnSaveKey").textContent=t.saveKey;$("btnGenAI").textContent=t.genAI;$("btnClearKey").textContent=aiKeyText().clear;$("lblAIStatus").textContent=loadStoredApiKey()?aiKeyText().saved:t.ready;if(!$("lblPath").textContent||["尚未載入","尚未载入","Not loaded"].includes($("lblPath").textContent))$("lblPath").textContent=l.notLoaded;setStaticLanguage();renderAll();renderSeq();renderPar();renderS1PeakChart();}
+    function applyLanguage(lang){state.lang=lang;const t=tr[lang],l=L();$("btnBatch").textContent=t.btnBatch;$("btnWafer").textContent=t.btnWafer;$("btnPPT").textContent=t.btnPPT;$("btnS1Peak").textContent=lang==="en"?"S1 Peak Check":"S1 peak檢查";$("btnS1PeakPPT").textContent=lang==="en"?"Export PPT":lang==="cn"?"产出 PPT":"產出 PPT";document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=t.tabs[i]||b.textContent||"S1 peak檢查");document.querySelector('[data-sub="singleG1"]').textContent=t.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=t.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;$("btnSaveKey").textContent=t.saveKey;$("btnGenAI").textContent=t.genAI;$("btnClearKey").textContent=aiKeyText().clear;$("lblAIStatus").textContent=loadStoredApiKey()?aiKeyText().saved:t.ready;if(!$("lblPath").textContent||["尚未載入","尚未载入","Not loaded"].includes($("lblPath").textContent))$("lblPath").textContent=l.notLoaded;setStaticLanguage();renderAll();renderSeq();renderPar();renderS1PeakChart();}
     function aiStatusText(){return state.lang==="en"?{noData:"Load batch data first",noKey:"Enter and save an API key first",calling:"Calling AI...",done:"Done",failed:"Failed"}:state.lang==="cn"?{noData:"请先载入批次资料",noKey:"请先输入并保存 API Key",calling:"正在呼叫 AI...",done:"完成",failed:"失败"}:{noData:"請先載入批次資料",noKey:"請先輸入並儲存 API Key",calling:"正在呼叫 AI...",done:"完成",failed:"失敗"};}
     function aiProviderName(){return $("cboProvider").value||$("cboProvider").selectedOptions?.[0]?.textContent||"";}
     function buildAIPrompt(){const g1=okSeries("G1","g1Removal").map(p=>p.y),g2=okSeries("G2","g2Removal").map(p=>p.y),g1Wear=wearSeriesData("g1"),g2Wear=wearSeriesData("g2"),i=state.info||{};const load=loadingDistGroups().map(g=>`${g.band||""} ${g.label}: n=${g.values.length}, avg=${fmt(avg(g.values),1)}, max=${fmt(max(g.values),1)}, min=${fmt(min(g.values),1)}`).join("\n");return `你是 FSG2300 研磨製程分析助手。請用繁體中文提供可執行的優化建議，重點放在移除量穩定性、S1 Loading、磨耗率、加工時間與異常風險。請用條列式輸出：1. 主要觀察 2. 可能原因 3. 建議調整 4. 需要再確認的資料。\n\n批次摘要\nMachine: ${i.machineModel||""}\nRecipe: ${i.recipeNumber||""} ${i.recipeName||""}\nWafers: ${state.records.length}\nUPH: ${fmt(i.g1UPH>0?i.g1UPH:batchUph(),1)}\nG1 Removal Avg/Std/Max/Min: ${fmt(avg(g1))} / ${fmt(std(g1))} / ${fmt(max(g1))} / ${fmt(min(g1))} um\nG2 Removal Avg/Std/Max/Min: ${fmt(avg(g2))} / ${fmt(std(g2))} / ${fmt(max(g2))} / ${fmt(min(g2))} um\nG1 NG: ${state.records.filter(r=>r.g1Result&&!r.g1OK).length}\nG2 NG: ${state.records.filter(r=>r.g2Result&&!r.g2OK).length}\nG1 Wear Rate: ${fmt(g1Wear.average,5)}\nG2 Wear Rate: ${fmt(g2Wear.average,5)}\n\nS1 Loading by Chuck\n${load}`;}
@@ -978,6 +1028,10 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.7.7",
+        "- Added S1 Peak Check PPT export button.",
+        "- S1 Peak PPT exports summary, abnormal list tables, and one S1 loading chart slide for each abnormal peak.",
         "",
         "v1.7.6",
         "- Refined S1 Peak Check to detect short, sharp spikes instead of normal broad load peaks.",
@@ -1038,6 +1092,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.7",
+        "- 新增 S1 peak检查页面的 PPT 输出按钮。",
+        "- S1 peak PPT 会输出摘要、异常清单表格，以及每笔异常 peak 的 S1 Load 图形投影片。",
+        "",
         "v1.7.6",
         "- 调整 S1 peak检查，改为侦测短时间尖峰，不再把正常宽波峰当成异常。",
         "- peak判定改用局部基准与峰宽过滤。",
@@ -1096,6 +1154,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.7",
+        "- 新增 S1 peak檢查頁面的 PPT 輸出按鍵。",
+        "- S1 peak PPT 會輸出摘要、異常清單表格，以及每筆異常 peak 的 S1 Load 圖形投影片。",
         "",
         "v1.7.6",
         "- 調整 S1 peak檢查，改為偵測短時間尖峰，不再把正常寬波峰當成異常。",
@@ -1159,6 +1221,7 @@
     $("btnWafer").addEventListener("click", ()=>$("singleFileInput").click());
     $("btnPPT").addEventListener("click", exportPptx);
     $("btnS1Peak").addEventListener("click", ()=>{$("s1PeakInput").value="";$("s1PeakInput").click();});
+    $("btnS1PeakPPT").addEventListener("click", exportS1PeakPptx);
     $("btnAbout").addEventListener("click", ()=>alert(releaseNotes()));
     $("folderInput").addEventListener("change", async e=>{try{$("lblPath").textContent="Loading...";await loadBatchFromFiles([...e.target.files]);}catch(err){alert(err.message||String(err));$("lblPath").textContent=tr[state.lang].notLoaded;}});
     $("singleFileInput").addEventListener("change", e=>loadSingleWafer(e.target.files[0]).catch(err=>alert(err.message||String(err))));
