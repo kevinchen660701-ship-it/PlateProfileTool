@@ -390,7 +390,7 @@
   </div>
 
   <script>
-    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null, s1PeakCheck: { items: [], selected: -1, folderName: "" } };
+    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null, s1PeakCheck: { items: [], selected: -1, folderName: "", totalWafers: 0 } };
     const $ = id => document.getElementById(id);
     const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v.toFixed(d)).toString() : "-";
     const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN;
@@ -796,7 +796,7 @@
         ctx.strokeStyle=c;ctx.lineWidth=2;
         if(ctx.setLineDash)ctx.setLineDash(s.dashed?(s.dash||[8,5]):[]);
         ctx.beginPath();s.points.forEach((pt,j)=>{const px=sx(pt.x),py=sy(pt.y);hoverItems.push({px,py,label:pt.hoverLabel||finalLegendLabel(s),x:pt.x,y:pt.y,xLabel:xLabel||"X",yLabel:yLabel||"Y",xInteger:waferAxis,color:c,text:pt.hoverText});j?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.stroke();
-        s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y),mc=pt.markerColor||"#d81e05";ctx.save();ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=mc;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.stroke();ctx.restore();});
+        s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y),mc=pt.markerColor||"#d81e05";ctx.save();ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=mc;ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.stroke();ctx.restore();});
       });
       if(ctx.setLineDash)ctx.setLineDash([]);
       ctx.restore();
@@ -906,7 +906,7 @@
         }
       }
       items.sort((a,b)=>b.severity-a.severity||b.peak-a.peak);
-      state.s1PeakCheck={items,selected:items.length?0:-1,folderName};
+      state.s1PeakCheck={items,selected:items.length?0:-1,folderName,totalWafers:files.length};
       renderS1PeakResults();
       activateTab("s1check");
       if(items.length)renderS1PeakChart(0);
@@ -914,7 +914,7 @@
     }
     function renderS1PeakResults(){
       const s=state.s1PeakCheck,items=s.items||[];
-      $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  異常 ${items.length} 筆`;
+      $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  總晶片數 ${s.totalWafers||0}  異常 ${items.length} 筆`;
       if(!items.length){$("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>未找到異常 peak</td></tr></tbody></table>';return;}
       const rows=items.map((x,i)=>`<tr data-s1idx="${i}" class="${i===s.selected?"active":""}"><td>${i+1}</td><td>${escHtml(x.folder)}</td><td>${escHtml(x.fileName)}</td><td>W${String(x.wafer).padStart(4,"0")}</td><td>${x.g}</td><td>C${x.ch||"-"}</td><td>${escHtml(x.result)}</td><td>${fmt(x.sec,1)}</td><td>${fmt(x.peak,1)}</td><td>${fmt(x.baseline,1)}</td><td>${fmt(x.delta,1)}</td><td>${escHtml(x.reason||"")}</td></tr>`).join("");
       $("dgvS1PeakResults").innerHTML=`<table><thead><tr><th>#</th><th>所在資料夾</th><th>檔案</th><th>Wafer</th><th>站別</th><th>Chuck</th><th>結果</th><th>秒</th><th>S1 Peak</th><th>基準</th><th>差異</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
