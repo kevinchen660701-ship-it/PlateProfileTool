@@ -246,7 +246,8 @@
     .wearinfo { display: flex; align-items: center; padding-left: 6px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, monospace; }
     .s1check { height: 100%; display: grid; grid-template-rows: 190px minmax(0, 1fr); background: #fff; }
     .s1summary { display: flex; align-items: center; gap: 14px; height: 32px; padding: 0 8px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, "Microsoft JhengHei", monospace; }
-    .s1results { overflow: auto; border-bottom: 1px solid #c8d0da; }
+    .s1check > div:first-child { min-height: 0; overflow: hidden; }
+    .s1results { height: calc(100% - 32px); overflow-y: auto; overflow-x: auto; scrollbar-gutter: stable; border-bottom: 1px solid #c8d0da; }
     .s1results tr { cursor: pointer; }
     .s1results tr.active td { background: #dbeafe; }
     .s1chartwrap { display: grid; grid-template-rows: 32px minmax(0, 1fr); min-height: 0; }
