@@ -292,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.7</div>
+      <div id="lblVersion">v1.8.8</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -384,7 +384,7 @@
         <section id="s1check" class="page">
           <div class="s1check">
             <div>
-              <div class="s1summary"><span id="lblS1PeakSummary">尚未執行 S1 peak檢查</span><label id="lblS1Delta" for="txtS1Delta">S1負載差異值</label><input id="txtS1Delta" type="number" min="0.1" step="0.1" value="0.6"><label id="lblS1Slope" for="txtS1Slope">S1拉升斜率</label><input id="txtS1Slope" type="number" min="0.01" step="0.01" value="0.4"><label id="lblS1RiseSec" for="txtS1RiseSec">拉升秒數</label><input id="txtS1RiseSec" type="number" min="0.5" step="0.5" value="3"><button id="btnS1PeakPPT" disabled>產出 PPT</button></div>
+              <div class="s1summary"><span id="lblS1PeakSummary">尚未執行 S1 peak檢查</span><label id="lblS1Delta" for="txtS1Delta">S1負載差異值</label><input id="txtS1Delta" type="number" min="0.1" step="0.1" value="0.6"><label id="lblS1Slope" for="txtS1Slope">S1整段拉升斜率</label><input id="txtS1Slope" type="number" min="0.01" step="0.01" value="0.4"><button id="btnS1PeakPPT" disabled>產出 PPT</button></div>
               <div id="dgvS1PeakResults" class="s1results"></div>
             </div>
             <div class="s1chartwrap">
@@ -683,7 +683,7 @@
     function asCell(v){return typeof v==="number"?fmt(v,4):(v??"-");}
     function roughFineName(name){const l=L(),n=String(name||"");if(/粗磨/.test(n)&&!/^G1/.test(n))return l.g1Rough;if(/[細细]磨/.test(n)&&!/^G2/.test(n))return l.g2Fine;return n;}
     function setInputLabel(id,text){const el=$(id);const p=el&&el.parentNode;if(!p)return;let node=[...p.childNodes].find(n=>n.nodeType===3&&n.nodeValue.trim());if(node)node.nodeValue=" "+text;else p.appendChild(document.createTextNode(" "+text));}
-    function setStaticLanguage(){const l=L();setInputLabel("chkLoadOverall",l.overall);setInputLabel("chkParSmooth",l.smooth);setInputLabel("chkThickG1",l.g1Thick);setInputLabel("chkThickG2",l.g2Thick);const labels=document.querySelectorAll("#ai .bar label");if(labels[0])labels[0].textContent=l.aiSvc;if($("lblS1Delta"))$("lblS1Delta").textContent=state.lang==="en"?"S1 Load delta":state.lang==="cn"?"S1负载差异值":"S1負載差異值";if($("lblS1Slope"))$("lblS1Slope").textContent=state.lang==="en"?"S1 rise slope":state.lang==="cn"?"S1拉升斜率":"S1拉升斜率";if($("lblS1RiseSec"))$("lblS1RiseSec").textContent=state.lang==="en"?"Rise seconds":state.lang==="cn"?"拉升秒数":"拉升秒數";}
+    function setStaticLanguage(){const l=L();setInputLabel("chkLoadOverall",l.overall);setInputLabel("chkParSmooth",l.smooth);setInputLabel("chkThickG1",l.g1Thick);setInputLabel("chkThickG2",l.g2Thick);const labels=document.querySelectorAll("#ai .bar label");if(labels[0])labels[0].textContent=l.aiSvc;if($("lblS1Delta"))$("lblS1Delta").textContent=state.lang==="en"?"S1 Load delta":state.lang==="cn"?"S1负载差异值":"S1負載差異值";if($("lblS1Slope"))$("lblS1Slope").textContent=state.lang==="en"?"S1 full-rise slope":state.lang==="cn"?"S1整段拉升斜率":"S1整段拉升斜率";}
     function isWaferAxis(label){return /Wafer|晶片/.test(label||"");}
     function renderInfo(){const l=L(),i=state.info||{},g1ng=state.records.filter(r=>r.g1Result&&!r.g1OK).length,g2ng=state.records.filter(r=>r.g2Result&&!r.g2OK).length,uph=i.g1UPH>0?i.g1UPH:batchUph();$("lblInfo").textContent=`  ${l.machine}:${i.machineModel||""}  ${l.sn}:${i.serialNumber||""}  ${l.recipe}:${i.recipeNumber||""} ${i.recipeName||""}  ${l.wafers}:${i.lotWaferAmount||state.records.length}  UPH:${fmt(uph,1)}  NG(G1/G2):${g1ng}/${g2ng}`;}
     function renderParams(){const l=L(),i=state.info||{};const rows=[["砂輪",i.g1WheelID,i.g2WheelID],["砂輪轉速 (rpm)",i.g1SpindleSpeed,i.g2SpindleSpeed],["工件轉速 (rpm)",i.g1WorkpieceSpeed,i.g2WorkpieceSpeed],["轉速比",i.g1WorkpieceSpeed?i.g1SpindleSpeed/i.g1WorkpieceSpeed:0,i.g2WorkpieceSpeed?i.g2SpindleSpeed/i.g2WorkpieceSpeed:0],["Air cut (um)",i.g1AirCut,i.g2AirCut],["移除量 Step1 (um)",i.g1RemoveValue1,i.g2RemoveValue1],["進給速度 Step1 (um/s)",i.g1FeedRate1,i.g2FeedRate1],["移除量 Step2 (um)",i.g1RemoveValue2,i.g2RemoveValue2],["進給速度 Step2 (um/s)",i.g1FeedRate2,i.g2FeedRate2],["Spark out (sec)",i.g1SparkOut,i.g2SparkOut],["Escape cut (um)",i.g1EscapeCutDist,i.g2EscapeCutDist],["Escape feed (um/s)",i.g1EscapeCutFeed,i.g2EscapeCutFeed],["Final Target (um)",i.g1FinalTarget,i.g2FinalTarget],["Total Step",i.g1TotalStep,i.g2TotalStep],["Pcs Grind",i.g1PcsGrind,i.g2PcsGrind],["平均磨耗 (um)",i.g1AvgWear,i.g2AvgWear],["UPH",i.g1UPH>0?fmt(i.g1UPH,1):"-",i.g2UPH>0?fmt(i.g2UPH,1):"-"]];$("dgvParams").innerHTML=table([l.param,l.g1Rough,l.g2Fine],rows.map(r=>[r[0],asCell(r[1]),asCell(r[2])]));}
@@ -855,14 +855,12 @@
     async function parseS1PeakWaferFile(file){const key=fileKey(file.name),text=await readFileText(file);const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name);data.fullPath=String(file.webkitRelativePath||file.name||"");data.folderPath=fileFolderPath(file);return data;}
     function s1EpisodePoints(steps){const ep=extractFirstGrindEpisode(steps||[]).filter(p=>Number.isFinite(p.relativeSec)&&Number.isFinite(p.s1Loading)&&p.s1Loading>0);if(!ep.length)return[];const t0=ep[0].relativeSec;return ep.map((p,i)=>({raw:p,index:i,x:p.relativeSec-t0,y:p.s1Loading}));}
     function s1Median(vals){return quantile(vals,.5);}
-    const S1_PEAK_MIN_DELTA=0.6,S1_SLOPE_MIN=0.4,S1_RAPID_RISE_SEC=3.0,S1_RAPID_CLUSTER_SEC=12.0,s1DeltaKey="fsg2300.s1PeakDelta",s1SlopeKey="fsg2300.s1PeakSlope",s1RiseSecKey="fsg2300.s1PeakRiseSec";
+    const S1_PEAK_MIN_DELTA=0.6,S1_SLOPE_MIN=0.4,S1_RAPID_CLUSTER_SEC=12.0,s1DeltaKey="fsg2300.s1PeakDelta",s1SlopeKey="fsg2300.s1PeakSlope";
     function s1PeakDeltaValue(){const el=$("txtS1Delta"),v=num(el?.value);return v>0?v:S1_PEAK_MIN_DELTA;}
     function s1SlopeValue(){const el=$("txtS1Slope"),v=num(el?.value);return v>0?v:S1_SLOPE_MIN;}
-    function s1RiseSecValue(){const el=$("txtS1RiseSec"),v=num(el?.value);return v>0?v:S1_RAPID_RISE_SEC;}
     function saveS1PeakDelta(){try{localStorage.setItem(s1DeltaKey,String(s1PeakDeltaValue()));}catch{}}
     function saveS1Slope(){try{localStorage.setItem(s1SlopeKey,String(s1SlopeValue()));}catch{}}
-    function saveS1RiseSec(){try{localStorage.setItem(s1RiseSecKey,String(s1RiseSecValue()));}catch{}}
-    function restoreS1PeakSettings(){try{const d=num(localStorage.getItem(s1DeltaKey));if(d>0)$("txtS1Delta").value=String(d);const s=num(localStorage.getItem(s1SlopeKey));if(s>0)$("txtS1Slope").value=String(s);const rs=num(localStorage.getItem(s1RiseSecKey));if(rs>0)$("txtS1RiseSec").value=String(rs);}catch{}}
+    function restoreS1PeakSettings(){try{const d=num(localStorage.getItem(s1DeltaKey));if(d>0)$("txtS1Delta").value=String(d);const s=num(localStorage.getItem(s1SlopeKey));if(s>0)$("txtS1Slope").value=String(s);}catch{}}
     function s1LoadingAccelerationMask(points){
       const vals=points.map(p=>p.y).filter(Number.isFinite),mask=points.map(()=>false);
       if(vals.length<12)return mask;
@@ -914,14 +912,13 @@
       }
       return out;
     }
-    function detectS1PeakAnomalies(points,minDelta=s1PeakDeltaValue(),minSlope=s1SlopeValue(),riseSec=s1RiseSecValue()){
+    function detectS1PeakAnomalies(points,minDelta=s1PeakDeltaValue(),minSlope=s1SlopeValue()){
       const vals=points.map(p=>p.y).filter(Number.isFinite);
       if(vals.length<12)return[];
       const accel=s1AccelerationMask(points),diffs=[];
       for(let i=1;i<points.length;i++)if(Number.isFinite(points[i].y)&&Number.isFinite(points[i-1].y))diffs.push(Math.abs(points[i].y-points[i-1].y));
       minDelta=Number.isFinite(minDelta)&&minDelta>0?minDelta:S1_PEAK_MIN_DELTA;
       minSlope=Number.isFinite(minSlope)&&minSlope>0?minSlope:S1_SLOPE_MIN;
-      riseSec=Number.isFinite(riseSec)&&riseSec>0?riseSec:S1_RAPID_RISE_SEC;
       const med=s1Median(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05),noise=Math.max(s1Median(diffs),.03),riseStep=Math.max(minDelta,noise*5),hits=[],used=new Set();
       const mark=(point,start,end,baseline,reason,slope=0)=>{
         const delta=point.y-baseline;
@@ -941,13 +938,23 @@
             continue;
           }
         }
-        if(hits.some(h=>points[i].x-h.point.x<=S1_RAPID_CLUSTER_SEC))continue;
-        let from=i-1;
-        while(from>0&&!accel[from-1]&&points[i].x-points[from-1].x<=riseSec)from--;
-        const window=points.slice(from,i).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
-        if(window.length>=3){
-          const start=window.reduce((best,p)=>p.y<best.y?p:best,window[0]),dt=Math.max(.001,points[i].x-start.x),rise=points[i].y-start.y,slope=rise/dt;
-          if(rise>minDelta&&slope>=minSlope)mark(points[i],from,i,start.y,"拉升斜率",slope);
+      }
+      const smoothHalf=Math.max(2,Math.min(10,Math.round(vals.length*.015)));
+      const smooth=points.map((p,i)=>{
+        const seg=points.slice(Math.max(0,i-smoothHalf),Math.min(points.length,i+smoothHalf+1)).map(q=>q.y).filter(Number.isFinite);
+        return {...p,y:seg.length?avg(seg):p.y};
+      });
+      let valley=null,valleyIndex=0,lastHitX=-Infinity;
+      for(let i=2;i<points.length-2;i++){
+        const p=points[i],sp=smooth[i];
+        if(accel[i]||!Number.isFinite(sp.y)){valley=null;continue;}
+        if(!valley||sp.y<valley.y-noise*3){valley=sp;valleyIndex=i;continue;}
+        const dt=sp.x-valley.x,rise=sp.y-valley.y,slope=rise/Math.max(.001,dt);
+        if(dt>=.5&&rise>minDelta&&slope>=minSlope&&p.x-lastHitX>S1_RAPID_CLUSTER_SEC&&!hits.some(h=>Math.abs(p.x-h.point.x)<=S1_RAPID_CLUSTER_SEC)){
+          if(mark(p,valleyIndex,i,valley.y,"整段拉升斜率",slope))lastHitX=p.x;
+        }
+        if(i>1&&Number.isFinite(smooth[i-1].y)&&smooth[i-1].y-sp.y>Math.max(minDelta*.6,noise*8)){
+          valley=sp;valleyIndex=i;
         }
       }
       return mergeS1PeakHits(hits).sort((a,b)=>b.severity-a.severity||b.delta-a.delta);
@@ -956,13 +963,12 @@
     async function runS1PeakCheck(files){
       files=[...files].filter(isWaferLogFile).sort((a,b)=>String(a.webkitRelativePath||a.name).localeCompare(String(b.webkitRelativePath||b.name)));
       if(!files.length)throw new Error("找不到 Wxxxx.csv 或 Wxxxx.ini 檔案。");
-      const items=[],folderName=files[0]?.webkitRelativePath?.split(/[\\/]/)[0]||"",threshold=s1PeakDeltaValue(),slopeThreshold=s1SlopeValue(),riseSec=s1RiseSecValue();
+      const items=[],folderName=files[0]?.webkitRelativePath?.split(/[\\/]/)[0]||"",threshold=s1PeakDeltaValue(),slopeThreshold=s1SlopeValue();
       saveS1PeakDelta();
       saveS1Slope();
-      saveS1RiseSec();
-      state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:(state.s1PeakCheck.chartToken||0)+1,zoom:1};
+      state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,chartToken:(state.s1PeakCheck.chartToken||0)+1,zoom:1};
       activateTab("s1check");
-      $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}  差異值>${fmt(threshold,1)}  斜率>${fmt(slopeThreshold,2)}  秒數=${fmt(riseSec,1)}`;
+      $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}  差異值>${fmt(threshold,1)}  整段斜率>${fmt(slopeThreshold,2)}`;
       $("btnS1PeakPPT").disabled=true;
       $("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>S1 peak檢查中...</td></tr></tbody></table>';
       $("lblS1PeakChart").textContent="S1 peak檢查中...";
@@ -970,7 +976,7 @@
       for(let i=0;i<files.length;i++){
         const file=files[i];
         if(i%5===0){
-          $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${i} / ${files.length}  差異值>${fmt(threshold,1)}  斜率>${fmt(slopeThreshold,2)}  秒數=${fmt(riseSec,1)}  ${file.name}`;
+          $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${i} / ${files.length}  差異值>${fmt(threshold,1)}  整段斜率>${fmt(slopeThreshold,2)}  ${file.name}`;
           await waitUiPaint();
         }
         try{
@@ -979,7 +985,7 @@
             const pts=s1EpisodePoints(data[`${g}Steps`]);
             if(!pts.length)continue;
             const base={fileRef:file,fileName:file.name,path:data.fullPath,folder:data.folderPath,wafer:int(data.waferNumber)||int(fileKey(file.name).replace(/\D/g,"")),g:g.toUpperCase(),ch:int(data.chuck)||0,result:data[`${g}Result`]||"-"};
-            for(const hit of detectS1PeakAnomalies(pts,threshold,slopeThreshold,riseSec)){
+            for(const hit of detectS1PeakAnomalies(pts,threshold,slopeThreshold)){
               items.push({...base,sec:hit.point.x,peak:hit.point.y,baseline:hit.baseline,threshold:hit.threshold,delta:hit.delta,slope:hit.slope,severity:hit.severity,index:hit.point.index,reason:hit.reason||"急升"});
             }
           }
@@ -991,7 +997,7 @@
       $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${files.length} / ${files.length}  正在整理結果`;
       await waitUiPaint();
       items.sort((a,b)=>b.severity-a.severity||b.peak-a.peak);
-      state.s1PeakCheck={items,selected:items.length?0:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:0,zoom:1};
+      state.s1PeakCheck={items,selected:items.length?0:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,chartToken:0,zoom:1};
       renderS1PeakResults();
       activateTab("s1check");
       if(items.length)renderS1PeakChart(0);
@@ -999,7 +1005,7 @@
     }
     function renderS1PeakResults(){
       const s=state.s1PeakCheck,items=s.items||[];
-      $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  總晶片數 ${s.totalWafers||0}  差異值>${fmt(s.threshold||s1PeakDeltaValue(),1)}  斜率>${fmt(s.slopeThreshold||s1SlopeValue(),2)}  秒數=${fmt(s.riseSec||s1RiseSecValue(),1)}  異常 ${items.length} 筆`;
+      $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  總晶片數 ${s.totalWafers||0}  差異值>${fmt(s.threshold||s1PeakDeltaValue(),1)}  整段斜率>${fmt(s.slopeThreshold||s1SlopeValue(),2)}  異常 ${items.length} 筆`;
       $("btnS1PeakPPT").disabled=!items.length;
       if(!items.length){$("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>未找到異常 peak</td></tr></tbody></table>';return;}
       const rows=items.map((x,i)=>`<tr data-s1idx="${i}" class="${i===s.selected?"active":""}"><td>${i+1}</td><td>${escHtml(x.folder)}</td><td>${escHtml(x.fileName)}</td><td>W${String(x.wafer).padStart(4,"0")}</td><td>${x.g}</td><td>C${x.ch||"-"}</td><td>${escHtml(x.result)}</td><td>${fmt(x.sec,1)}</td><td>${fmt(x.peak,1)}</td><td>${fmt(x.baseline,1)}</td><td>${fmt(x.delta,1)}</td><td>${fmt(x.slope,2)}</td><td>${escHtml(x.reason||"")}</td></tr>`).join("");
@@ -1059,7 +1065,7 @@
       });
     }
     async function buildS1PeakPptSlides(items){
-      const s=state.s1PeakCheck,folder=s.folderName||"",slides=[{title:"S1 peak檢查報告",isTitle:true,subtitle:"FSG2300 Log Analysis",lines:[`Folder: ${folder}`,`Total Wafers: ${s.totalWafers||0}`,`Abnormal Peaks: ${items.length}`,`Delta: ${fmt(s.threshold||s1PeakDeltaValue(),1)}   Slope: ${fmt(s.slopeThreshold||s1SlopeValue(),2)}   Rise Seconds: ${fmt(s.riseSec||s1RiseSecValue(),1)}`,`Export Time: ${fmtDate(new Date())}`]}];
+      const s=state.s1PeakCheck,folder=s.folderName||"",slides=[{title:"S1 peak檢查報告",isTitle:true,subtitle:"FSG2300 Log Analysis",lines:[`Folder: ${folder}`,`Total Wafers: ${s.totalWafers||0}`,`Abnormal Peaks: ${items.length}`,`Delta: ${fmt(s.threshold||s1PeakDeltaValue(),1)}   Full-rise Slope: ${fmt(s.slopeThreshold||s1SlopeValue(),2)}`,`Export Time: ${fmtDate(new Date())}`]}];
       const rows=s1PeakPptRows(items),headers=["#","資料夾 / 檔案","Wafer","站別","結果","秒","Peak","基準","差異","斜率","判定"];
       chunkLines(rows,14).forEach((chunk,i)=>slides.push({title:`S1 peak異常清單${i?` (${i+1})`:""}`,table:{headers,rows:chunk,colRatios:[.04,.27,.08,.07,.06,.07,.08,.08,.07,.07,.11],rowH:310000,fontSize:700}}));
       for(let i=0;i<items.length;i++){
@@ -1119,6 +1125,10 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.8.8",
+        "- Removed the rise-seconds setting from S1 Peak Check.",
+        "- Changed S1 rise-slope judgement to use the smoothed full rising segment slope instead of a short time window.",
         "",
         "v1.8.7",
         "- Added zoom in, zoom out, and reset controls for the S1 Peak Check chart.",
@@ -1219,6 +1229,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.8.8",
+        "- S1 peak检查移除拉升秒数设定。",
+        "- S1拉升斜率改为先平滑化，再使用整段拉升负载斜率，不再使用短时间窗口判定。",
+        "",
         "v1.8.7",
         "- S1 peak检查图表新增放大、缩小、还原控制。",
         "",
@@ -1317,6 +1331,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.8.8",
+        "- S1 peak檢查移除拉升秒數設定。",
+        "- S1拉升斜率改為先平滑化，再使用整段拉升負載斜率，不再使用短時間視窗判定。",
         "",
         "v1.8.7",
         "- S1 peak檢查圖表新增放大、縮小、還原控制。",
@@ -1426,7 +1444,6 @@
     $("btnS1ZoomReset").addEventListener("click", ()=>setS1PeakZoom("reset"));
     $("txtS1Delta").addEventListener("change", saveS1PeakDelta);
     $("txtS1Slope").addEventListener("change", saveS1Slope);
-    $("txtS1RiseSec").addEventListener("change", saveS1RiseSec);
     $("btnAbout").addEventListener("click", ()=>alert(releaseNotes()));
     $("folderInput").addEventListener("change", async e=>{try{$("lblPath").textContent="Loading...";await loadBatchFromFiles([...e.target.files]);}catch(err){alert(err.message||String(err));$("lblPath").textContent=tr[state.lang].notLoaded;}});
     $("singleFileInput").addEventListener("change", e=>loadSingleWafer(e.target.files[0]).catch(err=>alert(err.message||String(err))));
