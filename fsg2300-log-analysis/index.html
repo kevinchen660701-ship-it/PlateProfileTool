@@ -287,7 +287,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.1</div>
+      <div id="lblVersion">v1.8.2</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -1011,7 +1011,7 @@
         if(token!==state.s1PeakCheck.chartToken)return;
         const l=L(),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
         $("lblS1PeakChart").textContent=title;
-        drawLines($("chtS1PeakCheck"),[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}],procTimeAxisLabel(),l.loadingY,title);
+        drawLines($("chtS1PeakCheck"),[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}],procTimeAxisLabel(),l.loadingY,title,{xMin:0});
       }catch(err){
         if(token===state.s1PeakCheck.chartToken)$("lblS1PeakChart").textContent=`${title}  載入失敗：${err.message||String(err)}`;
       }
@@ -1022,7 +1022,7 @@
       const d=item.data||await parseS1PeakWaferFile(item.fileRef),l=L();
       return pptChart(c=>{
         const make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
-        drawLines(c,[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}],procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`);
+        drawLines(c,[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}],procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`,{xMin:0});
       });
     }
     async function buildS1PeakPptSlides(items){
@@ -1086,6 +1086,9 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.8.2",
+        "- S1 Peak Check chart and exported PPT chart now start the processing-time X axis at 0 seconds.",
         "",
         "v1.8.1",
         "- Fixed wafer step time parsing across midnight so processing time no longer becomes negative.",
@@ -1166,6 +1169,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.8.2",
+        "- S1 peak检查图表与汇出 PPT 图表的加工时间 X 轴固定从 0 秒开始。",
+        "",
         "v1.8.1",
         "- 修正晶片 step 时间跨过午夜时的解析，避免加工时间变成负数。",
         "- S1 peak检查图表会把午夜后的 S1 Loading 放在正确加工秒数位置。",
@@ -1244,6 +1250,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.8.2",
+        "- S1 peak檢查圖表與匯出 PPT 圖表的加工時間 X 軸固定從 0 秒開始。",
         "",
         "v1.8.1",
         "- 修正晶片 step 時間跨過午夜時的解析，避免加工時間變成負數。",
