@@ -56,6 +56,7 @@
     #btnBatch { left: 6px; background: #0066cc; }
     #btnWafer { left: 151px; background: #008c46; }
     #btnPPT { left: 300px; background: #b45014; }
+    #btnS1Peak { left: 444px; background: #7c3aed; }
     #btnPPT:disabled { filter: grayscale(.7); opacity: .55; cursor: not-allowed; }
     .langbtn {
       position: absolute;
@@ -70,12 +71,12 @@
       font-weight: 700;
     }
     .langbtn.active { background: #0072c6; border-color: #0072c6; color: #fff; }
-    #btnLangZhTW { left: 444px; }
-    #btnLangZhCN { left: 506px; }
-    #btnLangEn { left: 568px; }
+    #btnLangZhTW { left: 588px; }
+    #btnLangZhCN { left: 650px; }
+    #btnLangEn { left: 712px; }
     #btnAbout {
       position: absolute;
-      left: 630px;
+      left: 774px;
       top: 14px;
       width: 28px;
       height: 26px;
@@ -88,7 +89,7 @@
     }
     #lblPath {
       position: absolute;
-      left: 662px;
+      left: 806px;
       right: 104px;
       top: 14px;
       height: 30px;
@@ -243,6 +244,13 @@
     .subpage.active { display: block; }
     .wear { height: 100%; display: grid; grid-template-rows: 28px minmax(0, 1fr); }
     .wearinfo { display: flex; align-items: center; padding-left: 6px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, monospace; }
+    .s1check { height: 100%; display: grid; grid-template-rows: 190px minmax(0, 1fr); background: #fff; }
+    .s1summary { display: flex; align-items: center; gap: 14px; height: 32px; padding: 0 8px; background: #f0f3f8; border-bottom: 1px solid #d3dbe5; font: 13px Consolas, "Microsoft JhengHei", monospace; }
+    .s1results { overflow: auto; border-bottom: 1px solid #c8d0da; }
+    .s1results tr { cursor: pointer; }
+    .s1results tr.active td { background: #dbeafe; }
+    .s1chartwrap { display: grid; grid-template-rows: 32px minmax(0, 1fr); min-height: 0; }
+    .s1charttitle { display: flex; align-items: center; padding-left: 8px; background: #fff; color: #111827; font: 14px Consolas, "Microsoft JhengHei", monospace; }
     .ai { height: 100%; display: grid; grid-template-rows: 42px minmax(0, 1fr); }
     .ai textarea { width: 100%; height: 100%; border: 0; padding: 8px; resize: none; font-family: Consolas, "Microsoft JhengHei", monospace; }
     .ai input, .ai select { height: 28px; border: 1px solid #aeb9c7; padding: 3px 6px; }
@@ -253,11 +261,12 @@
       .topbar { height: 110px; }
       #btnWafer { left: 151px; }
       #btnPPT { left: 6px; top: 58px; }
-      #btnLangZhTW { left: 151px; top: 66px; }
-      #btnLangZhCN { left: 213px; top: 66px; }
-      #btnLangEn { left: 275px; top: 66px; }
-      #btnAbout { left: 337px; top: 66px; }
-      #lblPath { left: 372px; right: 8px; top: 66px; }
+      #btnS1Peak { left: 151px; top: 58px; }
+      #btnLangZhTW { left: 300px; top: 66px; }
+      #btnLangZhCN { left: 362px; top: 66px; }
+      #btnLangEn { left: 424px; top: 66px; }
+      #btnAbout { left: 486px; top: 66px; }
+      #lblPath { left: 518px; right: 8px; top: 66px; }
       #lblVersion { display: none; }
     }
   </style>
@@ -268,6 +277,7 @@
       <button id="btnBatch" class="mainbtn">📁  批次分析</button>
       <button id="btnWafer" class="mainbtn">📄  單片 Wafer</button>
       <button id="btnPPT" class="mainbtn" disabled>📊  產出 PPT</button>
+      <button id="btnS1Peak" class="mainbtn">S1 peak檢查</button>
       <button id="btnLangZhTW" class="langbtn active">繁中</button>
       <button id="btnLangZhCN" class="langbtn">簡中</button>
       <button id="btnLangEn" class="langbtn">EN</button>
@@ -276,6 +286,7 @@
       <div id="lblVersion">v1.7.2</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
+      <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
     </div>
     <div id="lblInfo" class="info">—</div>
     <div class="tabs">
@@ -292,6 +303,7 @@
         <button class="tab" data-tab="thickness">成品厚度</button>
         <button class="tab" data-tab="single">單片分析</button>
         <button class="tab" data-tab="ai">優化建議</button>
+        <button class="tab" data-tab="s1check">S1 peak檢查</button>
       </div>
 
       <main>
@@ -360,12 +372,24 @@
             <textarea id="rtbAI"></textarea>
           </div>
         </section>
+        <section id="s1check" class="page">
+          <div class="s1check">
+            <div>
+              <div id="lblS1PeakSummary" class="s1summary">尚未執行 S1 peak檢查</div>
+              <div id="dgvS1PeakResults" class="s1results"></div>
+            </div>
+            <div class="s1chartwrap">
+              <div id="lblS1PeakChart" class="s1charttitle">請選擇上方異常資料</div>
+              <div class="chartbox"><canvas id="chtS1PeakCheck" class="chart"></canvas></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
 
   <script>
-    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null };
+    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null, s1PeakCheck: { items: [], selected: -1, folderName: "" } };
     const $ = id => document.getElementById(id);
     const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v.toFixed(d)).toString() : "-";
     const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN;
@@ -521,7 +545,7 @@
     function quantile(values,q){if(!values.length)return NaN;const a=[...values].sort((x,y)=>x-y);const pos=(a.length-1)*q,base=Math.floor(pos),rest=pos-base;return a[base+1]!=null?a[base]+rest*(a[base+1]-a[base]):a[base];}
     function drawBox(canvas, groups, title){const {ctx,w,h}=setupCanvas(canvas);ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.font="13px Microsoft JhengHei UI, Arial";ctx.fillStyle="#222";ctx.fillText(title,12,18);const pad={l:50,r:20,t:38,b:72};const all=groups.flatMap(g=>g.values);ctx.strokeStyle="#d9e0e8";for(let i=0;i<=5;i++){const y=pad.t+i*((h-pad.t-pad.b)/5);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();}if(!all.length){ctx.fillText("No data",w/2-24,h/2);return;}const yMin=min(all),yMax=max(all);const sy=y=>h-pad.b-((y-yMin)/(yMax-yMin||1))*(h-pad.t-pad.b);const slot=(w-pad.l-pad.r)/groups.length;groups.forEach((g,i)=>{const v=g.values;if(!v.length)return;const q1=quantile(v,.25),q2=quantile(v,.5),q3=quantile(v,.75),lo=min(v),hi=max(v),m=avg(v);const x=pad.l+i*slot+slot/2;ctx.strokeStyle="#0072bd";ctx.fillStyle="rgba(0,114,189,.12)";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,sy(lo));ctx.lineTo(x,sy(hi));ctx.stroke();ctx.fillRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeRect(x-slot*.25,sy(q3),slot*.5,Math.max(2,sy(q1)-sy(q3)));ctx.strokeStyle="#c03030";ctx.beginPath();ctx.moveTo(x-slot*.25,sy(q2));ctx.lineTo(x+slot*.25,sy(q2));ctx.stroke();ctx.fillStyle="#2fa84f";ctx.beginPath();ctx.arc(x,sy(m),3,0,Math.PI*2);ctx.fill();ctx.save();ctx.translate(x-12,h-15);ctx.rotate(-Math.PI/4);ctx.fillStyle="#606a76";ctx.font="11px Consolas, monospace";ctx.fillText(g.label,0,0);ctx.restore();});}
 
-    function activateTab(id){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));setTimeout(()=>{renderAll(); if(id==="loadseq") renderSeq(); if(id==="loadpar") renderPar(); if(id==="single") renderSingleWaferCharts();},25);}
+    function activateTab(id){document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===id));document.querySelectorAll(".page").forEach(p=>p.classList.toggle("active",p.id===id));setTimeout(()=>{renderAll(); if(id==="loadseq") renderSeq(); if(id==="loadpar") renderPar(); if(id==="single") renderSingleWaferCharts(); if(id==="s1check") renderS1PeakChart();},25);}
     function applyLanguage(lang){state.lang=lang;const l=tr[lang];$("btnBatch").textContent=l.btnBatch;$("btnWafer").textContent=l.btnWafer;$("btnPPT").textContent=l.btnPPT;document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=l.tabs[i]);document.querySelector('[data-sub="singleG1"]').textContent=l.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=l.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;if($("lblPath").textContent==="尚未載入"||$("lblPath").textContent==="尚未载入"||$("lblPath").textContent==="Not loaded")$("lblPath").textContent=l.notLoaded;$("btnSaveKey").textContent=l.saveKey;$("btnGenAI").textContent=l.genAI;$("lblAIStatus").textContent=l.ready;renderAll();}
     function exportPptx(){if(!state.records.length)return;const slides=buildPptSlides();const files=makePptxFiles(slides);const blob=new Blob([zipStore(files)],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});downloadBlob(blob,`FSG2300_Analysis_${new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)}.pptx`);}
     function buildPptSlides(){const i=state.info||{};const g1=okSeries("G1","g1Removal").map(p=>p.y),g2=okSeries("G2","g2Removal").map(p=>p.y);const slides=[
@@ -770,7 +794,8 @@
         const c=colorMap[s.color]||s.color||"#0072bd";
         ctx.strokeStyle=c;ctx.lineWidth=2;
         if(ctx.setLineDash)ctx.setLineDash(s.dashed?(s.dash||[8,5]):[]);
-        ctx.beginPath();s.points.forEach((pt,j)=>{const px=sx(pt.x),py=sy(pt.y);hoverItems.push({px,py,label:finalLegendLabel(s),x:pt.x,y:pt.y,xLabel:xLabel||"X",yLabel:yLabel||"Y",xInteger:waferAxis,color:c});j?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.stroke();
+        ctx.beginPath();s.points.forEach((pt,j)=>{const px=sx(pt.x),py=sy(pt.y);hoverItems.push({px,py,label:pt.hoverLabel||finalLegendLabel(s),x:pt.x,y:pt.y,xLabel:xLabel||"X",yLabel:yLabel||"Y",xInteger:waferAxis,color:c,text:pt.hoverText});j?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.stroke();
+        s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y);ctx.fillStyle=pt.markerColor||"#d81e05";ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();ctx.stroke();});
       });
       if(ctx.setLineDash)ctx.setLineDash([]);
       ctx.restore();
@@ -814,6 +839,94 @@
 
     function renderWear(){const l=L(),g1=wearSeriesData("g1"),g2=wearSeriesData("g2");$("lblWearInfo").textContent=`  G1 ${l.wear}: ${fmt(g1.average,5)}    G2 ${l.wear}: ${fmt(g2.average,5)}    (= SWear / Removal, ${l.wearNote})`;drawLines($("chtWearG1Full"),[{name:l.perWafer,color:"g1",points:g1.points},{name:l.average,color:"orange",points:flatLine(g1.points,g1.average)}],l.wafer,l.wearY,`G1 ${l.wear}`,{yDecimals:3,extraYTicks:[g1.average]});drawLines($("chtWearG2Full"),[{name:l.perWafer,color:"g2",points:g2.points},{name:l.average,color:"orange",points:flatLine(g2.points,g2.average)}],l.wafer,l.wearY,`G2 ${l.wear}`,{yDecimals:3,extraYTicks:[g2.average]});}
 
+    function escHtml(v){return String(v??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));}
+    function fileFolderPath(file){const p=String(file.webkitRelativePath||file.name||"").replace(/\\/g,"/"),i=p.lastIndexOf("/");return i>=0?p.slice(0,i):"";}
+    function isWaferLogFile(file){return /^w\d+\.(csv|ini)$/i.test(fileKey(file.name||""));}
+    async function parseS1PeakWaferFile(file){const key=fileKey(file.name),text=await readFileText(file);const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name);data.fullPath=String(file.webkitRelativePath||file.name||"");data.folderPath=fileFolderPath(file);return data;}
+    function s1EpisodePoints(steps){const ep=extractFirstGrindEpisode(steps||[]).filter(p=>Number.isFinite(p.relativeSec)&&Number.isFinite(p.s1Loading)&&p.s1Loading>0);if(!ep.length)return[];const t0=ep[0].relativeSec;return ep.map((p,i)=>({raw:p,index:i,x:p.relativeSec-t0,y:p.s1Loading}));}
+    function s1Median(vals){return quantile(vals,.5);}
+    function detectS1PeakAnomalies(points){
+      const vals=points.map(p=>p.y).filter(Number.isFinite);
+      if(vals.length<12)return[];
+      const q1=quantile(vals,.25),q3=quantile(vals,.75),med=s1Median(vals),iqr=Math.max(q3-q1,.05),mean=avg(vals),sd=std(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05);
+      const threshold=Math.max(q3+3*iqr,med+6*mad,mean+3*sd);
+      const localWindow=5,spikeMin=Math.max(1.0,4*mad,iqr*1.2);
+      const flags=points.map((p,i)=>{
+        const from=Math.max(0,i-localWindow),to=Math.min(points.length,i+localWindow+1);
+        const near=points.slice(from,to).filter((_,j)=>from+j!==i).map(x=>x.y);
+        const localBase=near.length?s1Median(near):med;
+        const localPeak=(i>0&&i<points.length-1&&p.y>=points[i-1].y&&p.y>=points[i+1].y&&p.y-localBase>=spikeMin&&p.y>=q3+1.5*iqr);
+        return p.y>=threshold||localPeak;
+      });
+      const groups=[];
+      for(let i=0;i<flags.length;i++){
+        if(!flags[i])continue;
+        let j=i,best=points[i];
+        while(j+1<flags.length&&flags[j+1]){j++;if(points[j].y>best.y)best=points[j];}
+        groups.push({point:best,start:i,end:j,threshold,baseline:med,delta:best.y-med,severity:(best.y-med)/mad});
+        i=j;
+      }
+      return groups.sort((a,b)=>b.point.y-a.point.y);
+    }
+    async function runS1PeakCheck(files){
+      files=[...files].filter(isWaferLogFile).sort((a,b)=>String(a.webkitRelativePath||a.name).localeCompare(String(b.webkitRelativePath||b.name)));
+      if(!files.length)throw new Error("找不到 Wxxxx.csv 或 Wxxxx.ini 檔案。");
+      const items=[],scanned=[],folderName=files[0]?.webkitRelativePath?.split(/[\\/]/)[0]||"";
+      $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}`;
+      for(let i=0;i<files.length;i++){
+        const file=files[i];
+        if(i%10===0)$("lblS1PeakSummary").textContent=`S1 peak檢查中... ${i} / ${files.length}`;
+        try{
+          const data=await parseS1PeakWaferFile(file);
+          for(const g of["g1","g2"]){
+            const pts=s1EpisodePoints(data[`${g}Steps`]);
+            if(!pts.length)continue;
+            const peakPoint=pts.reduce((best,p)=>p.y>best.y?p:best,pts[0]),base={data,fileName:file.name,path:data.fullPath,folder:data.folderPath,wafer:int(data.waferNumber)||int(fileKey(file.name).replace(/\D/g,"")),g:g.toUpperCase(),ch:int(data.chuck)||0,result:data[`${g}Result`]||"-"};
+            scanned.push({...base,peakPoint,peak:peakPoint.y});
+            for(const hit of detectS1PeakAnomalies(pts)){
+              items.push({...base,sec:hit.point.x,peak:hit.point.y,baseline:hit.baseline,threshold:hit.threshold,delta:hit.delta,severity:hit.severity,index:hit.point.index,reason:"單片尖峰"});
+            }
+          }
+        }catch(err){
+          console.warn("S1 peak check skipped",file.name,err);
+        }
+      }
+      const keys=new Set(items.map(x=>`${x.path}|${x.g}|${x.index}`));
+      for(const g of["G1","G2"]){
+        const group=scanned.filter(x=>x.g===g),vals=group.map(x=>x.peak).filter(Number.isFinite);
+        if(vals.length<5)continue;
+        const q1=quantile(vals,.25),q3=quantile(vals,.75),med=quantile(vals,.5),iqr=Math.max(q3-q1,.05),threshold=Math.max(q3+1.5*iqr,avg(vals)+2*std(vals));
+        for(const row of group){
+          const key=`${row.path}|${row.g}|${row.peakPoint.index}`;
+          if(row.peak>=threshold&&!keys.has(key)){
+            items.push({...row,sec:row.peakPoint.x,baseline:med,threshold,delta:row.peak-med,severity:(row.peak-med)/iqr,index:row.peakPoint.index,reason:"跨Wafer偏高"});
+            keys.add(key);
+          }
+        }
+      }
+      items.sort((a,b)=>b.severity-a.severity||b.peak-a.peak);
+      state.s1PeakCheck={items,selected:items.length?0:-1,folderName};
+      renderS1PeakResults();
+      activateTab("s1check");
+      if(items.length)renderS1PeakChart(0);
+      else{const c=$("chtS1PeakCheck"),{ctx,w,h}=setupCanvas(c);ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);ctx.fillStyle="#606a76";ctx.font="14px Microsoft JhengHei UI, Arial";ctx.textAlign="center";ctx.fillText("未找到異常 peak",w/2,h/2);setChartTooltip(c,[]);$("lblS1PeakChart").textContent="未找到異常 peak";}
+    }
+    function renderS1PeakResults(){
+      const s=state.s1PeakCheck,items=s.items||[];
+      $("lblS1PeakSummary").textContent=`S1 peak檢查完成：${s.folderName||""}  異常 ${items.length} 筆`;
+      if(!items.length){$("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>未找到異常 peak</td></tr></tbody></table>';return;}
+      const rows=items.map((x,i)=>`<tr data-s1idx="${i}" class="${i===s.selected?"active":""}"><td>${i+1}</td><td>${escHtml(x.folder)}</td><td>${escHtml(x.fileName)}</td><td>W${String(x.wafer).padStart(4,"0")}</td><td>${x.g}</td><td>C${x.ch||"-"}</td><td>${escHtml(x.result)}</td><td>${fmt(x.sec,1)}</td><td>${fmt(x.peak,1)}</td><td>${fmt(x.baseline,1)}</td><td>${fmt(x.delta,1)}</td><td>${escHtml(x.reason||"")}</td></tr>`).join("");
+      $("dgvS1PeakResults").innerHTML=`<table><thead><tr><th>#</th><th>所在資料夾</th><th>檔案</th><th>Wafer</th><th>站別</th><th>Chuck</th><th>結果</th><th>秒</th><th>S1 Peak</th><th>基準</th><th>差異</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    function renderS1PeakChart(index=state.s1PeakCheck.selected){
+      const items=state.s1PeakCheck.items||[],item=items[index];if(!item)return;
+      state.s1PeakCheck.selected=index;renderS1PeakResults();
+      const d=item.data,l=L(),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
+      const title=`S1 peak檢查  ${item.folder}  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`;
+      $("lblS1PeakChart").textContent=title;
+      drawLines($("chtS1PeakCheck"),[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}],procTimeAxisLabel(),l.loadingY,title);
+    }
+
     const aiProviderKey="fsg2300.aiProvider";
     const apiKeyPrefix="fsg2300.aiKey.";
     function saveAIProvider(){try{localStorage.setItem(aiProviderKey,$("cboProvider").value||"");}catch{}}
@@ -825,7 +938,7 @@
     function restoreApiKey(){const key=loadStoredApiKey();$("txtApiKey").value=key;$("lblAIStatus").textContent=key?aiKeyText().saved:aiKeyText().ready;}
     function saveApiKey(){const value=$("txtApiKey").value.trim(),t=aiKeyText();if(!value){$("lblAIStatus").textContent=t.empty;return;}try{localStorage.setItem(aiKeyStorageKey(),value);$("lblAIStatus").textContent=t.saved;}catch{$("lblAIStatus").textContent=t.empty;}}
     function clearApiKey(){try{localStorage.removeItem(aiKeyStorageKey());}catch{}$("txtApiKey").value="";$("lblAIStatus").textContent=aiKeyText().cleared;}
-    function applyLanguage(lang){state.lang=lang;const t=tr[lang],l=L();$("btnBatch").textContent=t.btnBatch;$("btnWafer").textContent=t.btnWafer;$("btnPPT").textContent=t.btnPPT;document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=t.tabs[i]);document.querySelector('[data-sub="singleG1"]').textContent=t.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=t.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;$("btnSaveKey").textContent=t.saveKey;$("btnGenAI").textContent=t.genAI;$("btnClearKey").textContent=aiKeyText().clear;$("lblAIStatus").textContent=loadStoredApiKey()?aiKeyText().saved:t.ready;if(!$("lblPath").textContent||["尚未載入","尚未载入","Not loaded"].includes($("lblPath").textContent))$("lblPath").textContent=l.notLoaded;setStaticLanguage();renderAll();renderSeq();renderPar();}
+    function applyLanguage(lang){state.lang=lang;const t=tr[lang],l=L();$("btnBatch").textContent=t.btnBatch;$("btnWafer").textContent=t.btnWafer;$("btnPPT").textContent=t.btnPPT;$("btnS1Peak").textContent=lang==="en"?"S1 Peak Check":"S1 peak檢查";document.querySelectorAll(".langbtn").forEach(b=>b.classList.remove("active"));$(`btnLang${lang==="tw"?"ZhTW":lang==="cn"?"ZhCN":"En"}`).classList.add("active");document.querySelectorAll(".tab").forEach((b,i)=>b.textContent=t.tabs[i]||b.textContent||"S1 peak檢查");document.querySelector('[data-sub="singleG1"]').textContent=t.singleG1;document.querySelector('[data-sub="singleG2"]').textContent=t.singleG2;$("lblWaferNo").textContent=l.waferNo;$("lblOrFile").textContent=l.orOpen;$("btnLoadWafer").textContent=l.load;$("btnOpenSingle").textContent=l.browse;$("btnSaveKey").textContent=t.saveKey;$("btnGenAI").textContent=t.genAI;$("btnClearKey").textContent=aiKeyText().clear;$("lblAIStatus").textContent=loadStoredApiKey()?aiKeyText().saved:t.ready;if(!$("lblPath").textContent||["尚未載入","尚未载入","Not loaded"].includes($("lblPath").textContent))$("lblPath").textContent=l.notLoaded;setStaticLanguage();renderAll();renderSeq();renderPar();renderS1PeakChart();}
     function aiStatusText(){return state.lang==="en"?{noData:"Load batch data first",noKey:"Enter and save an API key first",calling:"Calling AI...",done:"Done",failed:"Failed"}:state.lang==="cn"?{noData:"请先载入批次资料",noKey:"请先输入并保存 API Key",calling:"正在呼叫 AI...",done:"完成",failed:"失败"}:{noData:"請先載入批次資料",noKey:"請先輸入並儲存 API Key",calling:"正在呼叫 AI...",done:"完成",failed:"失敗"};}
     function aiProviderName(){return $("cboProvider").value||$("cboProvider").selectedOptions?.[0]?.textContent||"";}
     function buildAIPrompt(){const g1=okSeries("G1","g1Removal").map(p=>p.y),g2=okSeries("G2","g2Removal").map(p=>p.y),g1Wear=wearSeriesData("g1"),g2Wear=wearSeriesData("g2"),i=state.info||{};const load=loadingDistGroups().map(g=>`${g.band||""} ${g.label}: n=${g.values.length}, avg=${fmt(avg(g.values),1)}, max=${fmt(max(g.values),1)}, min=${fmt(min(g.values),1)}`).join("\n");return `你是 FSG2300 研磨製程分析助手。請用繁體中文提供可執行的優化建議，重點放在移除量穩定性、S1 Loading、磨耗率、加工時間與異常風險。請用條列式輸出：1. 主要觀察 2. 可能原因 3. 建議調整 4. 需要再確認的資料。\n\n批次摘要\nMachine: ${i.machineModel||""}\nRecipe: ${i.recipeNumber||""} ${i.recipeName||""}\nWafers: ${state.records.length}\nUPH: ${fmt(i.g1UPH>0?i.g1UPH:batchUph(),1)}\nG1 Removal Avg/Std/Max/Min: ${fmt(avg(g1))} / ${fmt(std(g1))} / ${fmt(max(g1))} / ${fmt(min(g1))} um\nG2 Removal Avg/Std/Max/Min: ${fmt(avg(g2))} / ${fmt(std(g2))} / ${fmt(max(g2))} / ${fmt(min(g2))} um\nG1 NG: ${state.records.filter(r=>r.g1Result&&!r.g1OK).length}\nG2 NG: ${state.records.filter(r=>r.g2Result&&!r.g2OK).length}\nG1 Wear Rate: ${fmt(g1Wear.average,5)}\nG2 Wear Rate: ${fmt(g2Wear.average,5)}\n\nS1 Loading by Chuck\n${load}`;}
@@ -839,12 +952,15 @@
     $("btnBatch").addEventListener("click", ()=>$("folderInput").click());
     $("btnWafer").addEventListener("click", ()=>$("singleFileInput").click());
     $("btnPPT").addEventListener("click", exportPptx);
+    $("btnS1Peak").addEventListener("click", ()=>{$("s1PeakInput").value="";$("s1PeakInput").click();});
     $("btnAbout").addEventListener("click", ()=>alert("FSG2300 Log Analysis Web\\nCSV / INI batch analysis and single wafer charting."));
     $("folderInput").addEventListener("change", async e=>{try{$("lblPath").textContent="Loading...";await loadBatchFromFiles([...e.target.files]);}catch(err){alert(err.message||String(err));$("lblPath").textContent=tr[state.lang].notLoaded;}});
     $("singleFileInput").addEventListener("change", e=>loadSingleWafer(e.target.files[0]).catch(err=>alert(err.message||String(err))));
+    $("s1PeakInput").addEventListener("change", e=>runS1PeakCheck(e.target.files).catch(err=>alert(err.message||String(err))));
     $("btnOpenSingle").addEventListener("click", ()=>$("singleFileInput").click());
     $("btnLoadWafer").addEventListener("click", ()=>loadWaferFromBatch().catch(err=>alert(err.message||String(err))));
     document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>activateTab(b.dataset.tab)));
+    $("dgvS1PeakResults").addEventListener("click",e=>{const tr=e.target.closest("tr[data-s1idx]");if(tr)renderS1PeakChart(int(tr.dataset.s1idx));});
     document.querySelectorAll(".subtab").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".subtab").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".subpage").forEach(p=>p.classList.toggle("active",p.id===b.dataset.sub));setTimeout(renderSingleWaferCharts,35);}));
     ["chkLoadChuck1","chkLoadChuck2","chkLoadChuck3","chkLoadOverall","chkThickG1","chkThickG2"].forEach(id=>$(id).addEventListener("change",renderAll));
     document.querySelectorAll(".chkPar").forEach(x=>x.addEventListener("change",renderPar));
@@ -858,7 +974,7 @@
     $("btnGenAI").addEventListener("click",generateAIRecommendation);
     restoreAIProvider();
     restoreApiKey();
-    window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();setTimeout(renderSingleWaferCharts,35);});
+    window.addEventListener("resize",()=>{renderAll();renderSeq();renderPar();renderS1PeakChart();setTimeout(renderSingleWaferCharts,35);});
   </script>
 </body>
 </html>
