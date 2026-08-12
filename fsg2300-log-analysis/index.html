@@ -256,7 +256,10 @@
     .s1results tr { cursor: pointer; }
     .s1results tr.active td { background: #dbeafe; }
     .s1chartwrap { display: grid; grid-template-rows: 32px minmax(0, 1fr); min-height: 0; }
-    .s1charttitle { display: flex; align-items: center; padding-left: 8px; background: #fff; color: #111827; font: 14px Consolas, "Microsoft JhengHei", monospace; }
+    .s1charttitle { display: flex; align-items: center; gap: 8px; padding: 0 8px; background: #fff; color: #111827; font: 14px Consolas, "Microsoft JhengHei", monospace; }
+    .s1charttitle span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-align: center; }
+    .chartzoom { display: flex; gap: 4px; flex: 0 0 auto; }
+    .chartzoom button { min-width: 32px; height: 24px; border: 1px solid #9aa6b5; background: #f7f9fc; color: #111827; cursor: pointer; }
     .ai { height: 100%; display: grid; grid-template-rows: 42px minmax(0, 1fr); }
     .ai textarea { width: 100%; height: 100%; border: 0; padding: 8px; resize: none; font-family: Consolas, "Microsoft JhengHei", monospace; }
     .ai input, .ai select { height: 28px; border: 1px solid #aeb9c7; padding: 3px 6px; }
@@ -289,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.6</div>
+      <div id="lblVersion">v1.8.7</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -385,7 +388,7 @@
               <div id="dgvS1PeakResults" class="s1results"></div>
             </div>
             <div class="s1chartwrap">
-              <div id="lblS1PeakChart" class="s1charttitle">請選擇上方異常資料</div>
+              <div class="s1charttitle"><span id="lblS1PeakChart">請選擇上方異常資料</span><div class="chartzoom"><button id="btnS1ZoomIn" title="放大">+</button><button id="btnS1ZoomOut" title="縮小">-</button><button id="btnS1ZoomReset" title="還原">1:1</button></div></div>
               <div class="chartbox"><canvas id="chtS1PeakCheck" class="chart"></canvas></div>
             </div>
           </div>
@@ -395,7 +398,7 @@
   </div>
 
   <script>
-    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null, s1PeakCheck: { items: [], selected: -1, folderName: "", totalWafers: 0, chartToken: 0 } };
+    const state = { files: new Map(), info: null, records: [], waferCache: new Map(), folderName: "", seqLoaded: false, lang: "tw", singleData: null, s1PeakCheck: { items: [], selected: -1, folderName: "", totalWafers: 0, chartToken: 0, zoom: 1 } };
     const $ = id => document.getElementById(id);
     const fmt = (v, d = 2) => Number.isFinite(v) ? Number(v.toFixed(d)).toString() : "-";
     const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : NaN;
@@ -957,7 +960,7 @@
       saveS1PeakDelta();
       saveS1Slope();
       saveS1RiseSec();
-      state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:(state.s1PeakCheck.chartToken||0)+1};
+      state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:(state.s1PeakCheck.chartToken||0)+1,zoom:1};
       activateTab("s1check");
       $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}  差異值>${fmt(threshold,1)}  斜率>${fmt(slopeThreshold,2)}  秒數=${fmt(riseSec,1)}`;
       $("btnS1PeakPPT").disabled=true;
@@ -988,7 +991,7 @@
       $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${files.length} / ${files.length}  正在整理結果`;
       await waitUiPaint();
       items.sort((a,b)=>b.severity-a.severity||b.peak-a.peak);
-      state.s1PeakCheck={items,selected:items.length?0:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:0};
+      state.s1PeakCheck={items,selected:items.length?0:-1,folderName,totalWafers:files.length,threshold,slopeThreshold,riseSec,chartToken:0,zoom:1};
       renderS1PeakResults();
       activateTab("s1check");
       if(items.length)renderS1PeakChart(0);
@@ -1002,18 +1005,46 @@
       const rows=items.map((x,i)=>`<tr data-s1idx="${i}" class="${i===s.selected?"active":""}"><td>${i+1}</td><td>${escHtml(x.folder)}</td><td>${escHtml(x.fileName)}</td><td>W${String(x.wafer).padStart(4,"0")}</td><td>${x.g}</td><td>C${x.ch||"-"}</td><td>${escHtml(x.result)}</td><td>${fmt(x.sec,1)}</td><td>${fmt(x.peak,1)}</td><td>${fmt(x.baseline,1)}</td><td>${fmt(x.delta,1)}</td><td>${fmt(x.slope,2)}</td><td>${escHtml(x.reason||"")}</td></tr>`).join("");
       $("dgvS1PeakResults").innerHTML=`<table><thead><tr><th>#</th><th>所在資料夾</th><th>檔案</th><th>Wafer</th><th>站別</th><th>Chuck</th><th>結果</th><th>秒</th><th>S1 Peak</th><th>基準</th><th>差異</th><th>斜率</th><th>判定</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
+    function s1PeakZoomOptions(series,item){
+      const pts=series.flatMap(s=>s.points||[]).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+      if(!pts.length)return{xMin:0};
+      const fullMin=0,fullMax=Math.max(...pts.map(p=>p.x),1),zoom=Math.max(1,Math.min(12,state.s1PeakCheck.zoom||1));
+      if(zoom<=1.0001)return{xMin:0};
+      const fullSpan=Math.max(1,fullMax-fullMin),span=Math.max(5,fullSpan/zoom),center=Number.isFinite(item.sec)?item.sec:(fullMin+fullMax)/2;
+      let xMin=Math.max(fullMin,center-span/2),xMax=Math.min(fullMax,center+span/2);
+      if(xMax-xMin<span){if(xMin<=fullMin)xMax=Math.min(fullMax,fullMin+span);else if(xMax>=fullMax)xMin=Math.max(fullMin,fullMax-span);}
+      const visible=pts.filter(p=>p.x>=xMin&&p.x<=xMax);
+      if(visible.length){
+        let yMin=min(visible.map(p=>p.y)),yMax=max(visible.map(p=>p.y));
+        if(yMin===yMax){yMin-=1;yMax+=1;}
+        const pad=Math.max((yMax-yMin)*.18,.4);
+        return{xMin,xMax,yMin:Math.max(0,yMin-pad),yMax:yMax+pad};
+      }
+      return{xMin,xMax};
+    }
+    function setS1PeakZoom(mode){
+      const s=state.s1PeakCheck;
+      if(mode==="reset")s.zoom=1;
+      else if(mode==="in")s.zoom=Math.min(12,(s.zoom||1)*1.6);
+      else if(mode==="out")s.zoom=Math.max(1,(s.zoom||1)/1.6);
+      renderS1PeakChart(s.selected);
+    }
     async function renderS1PeakChart(index=state.s1PeakCheck.selected){
       const items=state.s1PeakCheck.items||[],item=items[index];if(!item)return;
+      if(index!==state.s1PeakCheck.selected)state.s1PeakCheck.zoom=1;
       const token=(state.s1PeakCheck.chartToken||0)+1;state.s1PeakCheck.chartToken=token;
       state.s1PeakCheck.selected=index;renderS1PeakResults();
       const title=`S1 peak檢查  ${item.folder}  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`;
       $("lblS1PeakChart").textContent=`${title}  載入中...`;
       try{
         const d=item.data||await parseS1PeakWaferFile(item.fileRef);
+        item.data=d;
         if(token!==state.s1PeakCheck.chartToken)return;
         const l=L(),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
-        $("lblS1PeakChart").textContent=title;
-        drawLines($("chtS1PeakCheck"),[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}],procTimeAxisLabel(),l.loadingY,title,{xMin:0});
+        const series=[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}];
+        const zoom=state.s1PeakCheck.zoom||1,zoomText=zoom>1.0001?`  x${fmt(zoom,1)}`:"";
+        $("lblS1PeakChart").textContent=title+zoomText;
+        drawLines($("chtS1PeakCheck"),series,procTimeAxisLabel(),l.loadingY,title+zoomText,s1PeakZoomOptions(series,item));
       }catch(err){
         if(token===state.s1PeakCheck.chartToken)$("lblS1PeakChart").textContent=`${title}  載入失敗：${err.message||String(err)}`;
       }
@@ -1088,6 +1119,9 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.8.7",
+        "- Added zoom in, zoom out, and reset controls for the S1 Peak Check chart.",
         "",
         "v1.8.6",
         "- Added a configurable rise-time window for S1 rise-slope detection.",
@@ -1185,6 +1219,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.8.7",
+        "- S1 peak检查图表新增放大、缩小、还原控制。",
+        "",
         "v1.8.6",
         "- S1负载拉升斜率检查新增拉升秒数设定，可调整斜率计算时间窗口。",
         "",
@@ -1280,6 +1317,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.8.7",
+        "- S1 peak檢查圖表新增放大、縮小、還原控制。",
         "",
         "v1.8.6",
         "- S1負載拉升斜率檢查新增拉升秒數設定，可調整斜率計算時間視窗。",
@@ -1381,6 +1421,9 @@
     $("btnPPT").addEventListener("click", exportPptx);
     $("btnS1Peak").addEventListener("click", ()=>{$("s1PeakInput").value="";$("s1PeakInput").click();});
     $("btnS1PeakPPT").addEventListener("click", exportS1PeakPptx);
+    $("btnS1ZoomIn").addEventListener("click", ()=>setS1PeakZoom("in"));
+    $("btnS1ZoomOut").addEventListener("click", ()=>setS1PeakZoom("out"));
+    $("btnS1ZoomReset").addEventListener("click", ()=>setS1PeakZoom("reset"));
     $("txtS1Delta").addEventListener("change", saveS1PeakDelta);
     $("txtS1Slope").addEventListener("change", saveS1Slope);
     $("txtS1RiseSec").addEventListener("change", saveS1RiseSec);
