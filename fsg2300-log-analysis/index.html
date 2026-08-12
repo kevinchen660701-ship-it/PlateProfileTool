@@ -284,7 +284,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.5</div>
+      <div id="lblVersion">v1.7.6</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -850,14 +850,20 @@
       const vals=points.map(p=>p.y).filter(Number.isFinite);
       if(vals.length<12)return[];
       const q1=quantile(vals,.25),q3=quantile(vals,.75),med=s1Median(vals),iqr=Math.max(q3-q1,.05),mean=avg(vals),sd=std(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05);
-      const threshold=Math.max(q3+3*iqr,med+6*mad,mean+3*sd);
-      const localWindow=5,spikeMin=Math.max(1.0,4*mad,iqr*1.2);
+      const threshold=Math.max(q3+3*iqr,med+6*mad,mean+3*sd),localWindow=24,excludeWindow=3,spikeMin=Math.max(1.0,4*mad,iqr*1.2);
       const flags=points.map((p,i)=>{
+        if(i<2||i>points.length-3||p.y<q3+1.5*iqr)return false;
+        if(!(p.y>=points[i-1].y&&p.y>=points[i+1].y))return false;
         const from=Math.max(0,i-localWindow),to=Math.min(points.length,i+localWindow+1);
-        const near=points.slice(from,to).filter((_,j)=>from+j!==i).map(x=>x.y);
-        const localBase=near.length?s1Median(near):med;
-        const localPeak=(i>0&&i<points.length-1&&p.y>=points[i-1].y&&p.y>=points[i+1].y&&p.y-localBase>=spikeMin&&p.y>=q3+1.5*iqr);
-        return p.y>=threshold||localPeak;
+        const local=points.slice(from,to).filter((_,j)=>Math.abs(from+j-i)>excludeWindow).map(x=>x.y).filter(Number.isFinite);
+        const localBase=local.length>=8?s1Median(local):med,prom=p.y-localBase;
+        if(prom<spikeMin||p.y<threshold&&prom<spikeMin*1.5)return false;
+        const half=localBase+prom*.5;
+        let l=i,r=i;
+        while(l>0&&points[l-1].y>=half)l--;
+        while(r+1<points.length&&points[r+1].y>=half)r++;
+        const widthPts=r-l+1,widthSec=Math.abs((points[r].x??r)-(points[l].x??l));
+        return widthPts<=12&&widthSec<=6;
       });
       const groups=[];
       for(let i=0;i<flags.length;i++){
@@ -973,6 +979,10 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.7.6",
+        "- Refined S1 Peak Check to detect short, sharp spikes instead of normal broad load peaks.",
+        "- Peak detection now uses a local baseline and peak width filter.",
+        "",
         "v1.7.5",
         "- Improved S1 Peak Check progress display for large folder scans.",
         "- The check page opens immediately, shows the scanned wafer count and current file name, and refreshes before heavy reading starts.",
@@ -1028,6 +1038,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.6",
+        "- 调整 S1 peak检查，改为侦测短时间尖峰，不再把正常宽波峰当成异常。",
+        "- peak判定改用局部基准与峰宽过滤。",
+        "",
         "v1.7.5",
         "- 改善 S1 peak检查大量资料夹扫描时的进度显示。",
         "- 检查页面会立即开启，显示已扫描晶片数与目前档名，并在大量读档前先刷新画面。",
@@ -1082,6 +1096,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.6",
+        "- 調整 S1 peak檢查，改為偵測短時間尖峰，不再把正常寬波峰當成異常。",
+        "- peak判定改用局部基準與峰寬過濾。",
         "",
         "v1.7.5",
         "- 改善 S1 peak檢查大量資料夾掃描時的進度顯示。",
