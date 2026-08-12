@@ -287,7 +287,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.2</div>
+      <div id="lblVersion">v1.8.3</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -908,8 +908,7 @@
       if(vals.length<12)return[];
       const accel=s1AccelerationMask(points),diffs=[];
       for(let i=1;i<points.length;i++)if(Number.isFinite(points[i].y)&&Number.isFinite(points[i-1].y))diffs.push(Math.abs(points[i].y-points[i-1].y));
-      const med=s1Median(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05),noise=Math.max(s1Median(diffs),.03),riseStep=Math.max(.25,noise*5),hits=[],used=new Set();
-      const nonAccelBefore=i=>points.filter((p,j)=>j<i&&!accel[j]&&p.x>=points[i].x-S1_RAPID_RISE_SEC&&Number.isFinite(p.y));
+      const med=s1Median(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05),noise=Math.max(s1Median(diffs),.03),riseStep=Math.max(S1_PEAK_MIN_DELTA,noise*5),hits=[],used=new Set();
       const mark=(point,start,end,baseline,reason)=>{
         const delta=point.y-baseline;
         if(delta<=S1_PEAK_MIN_DELTA)return false;
@@ -936,14 +935,10 @@
             }
           }
         }
-        const before=nonAccelBefore(i);
-        if(before.length>=3){
-          const base=s1Median(before.map(p=>p.y)),rise=points[i].y-base,step=points[i].y-points[i-1].y,slope=rise/Math.max(.1,points[i].x-before[0].x);
-          if(rise>S1_PEAK_MIN_DELTA&&step>=riseStep&&slope>=.22){
-            let end=i,best=points[i];
-            while(end+1<points.length&&!accel[end+1]&&points[end+1].x-points[i].x<=S1_RAPID_RISE_SEC){end++;if(points[end].y>best.y)best=points[end];}
-            mark(best,i,end,base,"急升");
-            i=end;
+        if(!accel[i-1]&&Number.isFinite(points[i-1].y)){
+          const prev=points[i-1],step=points[i].y-prev.y,dt=Math.max(.001,points[i].x-prev.x),slope=step/dt;
+          if(step>S1_PEAK_MIN_DELTA&&step>=riseStep&&slope>=.22){
+            mark(points[i],i,i,prev.y,"急升");
             continue;
           }
         }
@@ -1087,6 +1082,9 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.8.3",
+        "- S1 Peak Check rapid-rise judgement now compares S1 Loading with the previous valid point instead of comparing with a later peak or baseline segment.",
+        "",
         "v1.8.2",
         "- S1 Peak Check chart and exported PPT chart now start the processing-time X axis at 0 seconds.",
         "",
@@ -1169,6 +1167,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.8.3",
+        "- S1 peak检查的急升判定改为与前一笔有效 S1 Loading 比较，不再与后续 peak 或整段基准比较。",
+        "",
         "v1.8.2",
         "- S1 peak检查图表与汇出 PPT 图表的加工时间 X 轴固定从 0 秒开始。",
         "",
@@ -1250,6 +1251,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.8.3",
+        "- S1 peak檢查的急升判定改為與前一筆有效 S1 Loading 比較，不再與後續 peak 或整段基準比較。",
         "",
         "v1.8.2",
         "- S1 peak檢查圖表與匯出 PPT 圖表的加工時間 X 軸固定從 0 秒開始。",
