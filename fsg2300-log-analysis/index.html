@@ -796,7 +796,7 @@
         ctx.strokeStyle=c;ctx.lineWidth=2;
         if(ctx.setLineDash)ctx.setLineDash(s.dashed?(s.dash||[8,5]):[]);
         ctx.beginPath();s.points.forEach((pt,j)=>{const px=sx(pt.x),py=sy(pt.y);hoverItems.push({px,py,label:pt.hoverLabel||finalLegendLabel(s),x:pt.x,y:pt.y,xLabel:xLabel||"X",yLabel:yLabel||"Y",xInteger:waferAxis,color:c,text:pt.hoverText});j?ctx.lineTo(px,py):ctx.moveTo(px,py);});ctx.stroke();
-        s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y);ctx.fillStyle=pt.markerColor||"#d81e05";ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();ctx.stroke();});
+        s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y),mc=pt.markerColor||"#d81e05";ctx.save();ctx.strokeStyle="#fff";ctx.lineWidth=4;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=mc;ctx.lineWidth=2;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.stroke();ctx.restore();});
       });
       if(ctx.setLineDash)ctx.setLineDash([]);
       ctx.restore();
