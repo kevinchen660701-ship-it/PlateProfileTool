@@ -287,7 +287,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.8</div>
+      <div id="lblVersion">v1.7.9</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -849,6 +849,7 @@
     async function parseS1PeakWaferFile(file){const key=fileKey(file.name),text=await readFileText(file);const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name);data.fullPath=String(file.webkitRelativePath||file.name||"");data.folderPath=fileFolderPath(file);return data;}
     function s1EpisodePoints(steps){const ep=extractFirstGrindEpisode(steps||[]).filter(p=>Number.isFinite(p.relativeSec)&&Number.isFinite(p.s1Loading)&&p.s1Loading>0);if(!ep.length)return[];const t0=ep[0].relativeSec;return ep.map((p,i)=>({raw:p,index:i,x:p.relativeSec-t0,y:p.s1Loading}));}
     function s1Median(vals){return quantile(vals,.5);}
+    const S1_PEAK_MIN_DELTA=0.6;
     function s1LoadingAccelerationMask(points){
       const vals=points.map(p=>p.y).filter(Number.isFinite),mask=points.map(()=>false);
       if(vals.length<12)return mask;
@@ -913,7 +914,8 @@
         if(!flags[i])continue;
         let j=i,best=points[i];
         while(j+1<flags.length&&flags[j+1]){j++;if(points[j].y>best.y)best=points[j];}
-        groups.push({point:best,start:i,end:j,threshold,baseline:med,delta:best.y-med,severity:(best.y-med)/mad});
+        const delta=best.y-med;
+        if(delta>S1_PEAK_MIN_DELTA)groups.push({point:best,start:i,end:j,threshold,baseline:med,delta,severity:delta/mad});
         i=j;
       }
       return groups.sort((a,b)=>b.point.y-a.point.y);
@@ -963,8 +965,9 @@
         const q1=quantile(vals,.25),q3=quantile(vals,.75),med=quantile(vals,.5),iqr=Math.max(q3-q1,.05),threshold=Math.max(q3+1.5*iqr,avg(vals)+2*std(vals));
         for(const row of group){
           const key=`${row.path}|${row.g}|${row.peakIndex}`;
-          if(row.peak>=threshold&&!keys.has(key)){
-            items.push({...row,sec:row.peakSec,baseline:med,threshold,delta:row.peak-med,severity:(row.peak-med)/iqr,index:row.peakIndex,reason:"跨Wafer偏高"});
+          const delta=row.peak-med;
+          if(row.peak>=threshold&&delta>S1_PEAK_MIN_DELTA&&!keys.has(key)){
+            items.push({...row,sec:row.peakSec,baseline:med,threshold,delta,severity:delta/iqr,index:row.peakIndex,reason:"跨Wafer偏高"});
             keys.add(key);
           }
         }
@@ -1071,6 +1074,9 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.7.9",
+        "- S1 Peak Check now ignores abnormal candidates when Peak - baseline difference is 0.6 or less.",
+        "",
         "v1.7.8",
         "- S1 Peak Check now skips points while S1 spindle speed is still accelerating.",
         "- Cross-wafer peak comparison also ignores acceleration-stage points.",
@@ -1138,6 +1144,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.9",
+        "- S1 peak检查中，Peak 与基准差异在 0.6 以内的候选异常会略过。",
+        "",
         "v1.7.8",
         "- S1 peak检查会略过 S1 主轴转速仍在加速中的资料点。",
         "- 跨Wafer peak比较也会排除加速段资料点。",
@@ -1204,6 +1213,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.9",
+        "- S1 peak檢查中，Peak 與基準差異在 0.6 以內的候選異常會略過。",
         "",
         "v1.7.8",
         "- S1 peak檢查會略過 S1 主軸轉速仍在加速中的資料點。",
