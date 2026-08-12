@@ -284,7 +284,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.2</div>
+      <div id="lblVersion">v1.7.3</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -953,6 +953,10 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.7.3",
+        "- Added S1 Peak Check instructions to the release notes.",
+        "- S1 Peak Check: click the button, select a folder, scan INI / CSV files in all subfolders, then show total wafers, abnormal peak list, wafer / folder information, and S1 loading chart.",
+        "",
         "v1.7.2",
         "- Added S1 Peak Check total wafer count.",
         "- Enlarged the abnormal peak marker while keeping it hollow.",
@@ -996,6 +1000,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.3",
+        "- 新增 S1 peak检查说明到 release 说明。",
+        "- S1 peak检查：按下按钮后选择资料夹，会扫描资料夹与子资料夹内 INI / CSV 档案，并显示总晶片数、异常 peak 清单、Wafer / 所在资料夹资讯与 S1 Load 图形。",
+        "",
         "v1.7.2",
         "- S1 peak检查完成后显示总晶片数。",
         "- 异常 peak 红色圆点加大，并保持空心避免遮住曲线。",
@@ -1038,6 +1046,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.3",
+        "- 新增 S1 peak檢查說明到 release 說明。",
+        "- S1 peak檢查：按下按鍵後選擇資料夾，會掃描資料夾與子資料夾內 INI / CSV 檔案，並顯示總晶片數、異常 peak 清單、Wafer / 所在資料夾資訊與 S1 Load 圖形。",
         "",
         "v1.7.2",
         "- S1 peak檢查完成後顯示總晶片數。",
