@@ -287,7 +287,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.7</div>
+      <div id="lblVersion">v1.7.8</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -531,7 +531,7 @@
     function parseWaferIniData(text, fileName) { const ini=parseIni(text); const data={fileName, waferNumber:int(fileKey(fileName).replace(/\D/g,"")), chuck:0, g1Steps:[], g2Steps:[]}; const block=parts(iniGet(ini,"BlockInfo","Data")); data.chuck=int(at(block,0)); data.g1Result=at(block,1)==="0"?"OK":"NG"; data.g2Result=at(block,2)==="0"?"OK":"NG"; data.waferNumber=int(at(parts(iniGet(ini,"BlockInfo","Cassette")),2))||data.waferNumber; fillWaferSummaryIni(ini,"G1",data); fillWaferSummaryIni(ini,"G2",data); fillWaferStepsIni(ini,"G1",data.g1Steps); fillWaferStepsIni(ini,"G2",data.g2Steps); fixRelative(data.g1Steps); fixRelative(data.g2Steps); return data; }
     function fillWaferSummaryIni(ini,g,data){const p=g.toLowerCase();const s0=parts(iniGet(ini,`${g}_Recipe`,"Step0"));const steps=int(at(s0,6));const before=parts(iniGet(ini,`${g}_Wheel`,"BeforeGrd"));const after=parts(iniGet(ini,`${g}_Wheel`,`AfterGrdStep${steps}`));data[`${p}TargetSV`]=num(at(s0,7));data[`${p}Income`]=num(at(before,12));data[`${p}LastWaferMin`]=num(at(before,11));data[`${p}TargetPV`]=num(at(after,11));}
     function fillWaferStepsIni(ini,g,out){const steps=int(at(parts(iniGet(ini,`${g}_Recipe`,"Step0")),6));let prevEnd=0;for(let step=1;step<=steps;step++){const sec=ini[`${g}_Step${step}`];if(!sec)continue;const count=int(sec["0"]);let start=NaN;const offset=prevEnd;for(let k=1;k<=count;k++){const row=sec[String(k)];if(!row)continue;const c=csvSplit(row);const t=parseTimeSeconds(c[0]);if(!Number.isFinite(t))continue;if(!Number.isFinite(start))start=t;const rec=stepRecord(c,t-start+offset);prevEnd=rec.relativeSec;out.push(rec);}}}
-    function stepRecord(c, rel){return {relativeSec:rel,timestampSec:parseTimeSeconds(c[0]),waferMax:num(c[1]),waferMin:num(c[2]),waferOnline:num(c[3]),zmch:num(c[4]),zabs:num(c[5])*1000,s1Loading:num(c[7]),s2Loading:num(c[8]),zLoading:num(c[9]),zfeedrate:num(c[13])};}
+    function stepRecord(c, rel){return {relativeSec:rel,timestampSec:parseTimeSeconds(c[0]),waferMax:num(c[1]),waferMin:num(c[2]),waferOnline:num(c[3]),zmch:num(c[4]),zabs:num(c[5])*1000,s1Loading:num(c[7]),s2Loading:num(c[8]),zLoading:num(c[9]),s1Speed:num(c[11]),s2Speed:num(c[12]),zfeedrate:num(c[13])};}
     function fixRelative(steps){if(!steps.length)return;const hasMs=steps.some(r=>Math.abs(r.timestampSec-Math.round(r.timestampSec))>.0001);if(hasMs)return;steps.forEach((r,i)=>r.relativeSec=i/9);}
     async function parseWafer(file){const key=fileKey(file.name); if(state.waferCache.has(key)) return state.waferCache.get(key); const text=await readFileText(file); const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name); state.waferCache.set(key,data); return data;}
     async function loadSingleWafer(file){if(!file)return; $("lblPath").textContent=file.name; const data=await parseWafer(file); $("txtSingleFile").value=file.name; drawLines($("chtSingleG1"), [{name:"S1 Loading",color:"g1",points:data.g1Steps.map(r=>({x:r.relativeSec,y:r.s1Loading}))}], "sec", "S1 Loading (%)", `G1 粗磨  S1 Loading  Chuck#${data.chuck||"-"}  Income=${fmt(data.g1Income,1)}um  結果:${data.g1Result||"-"}`); drawLines($("chtSingleG2"), [{name:"S1 Loading",color:"g2",points:data.g2Steps.map(r=>({x:r.relativeSec,y:r.s1Loading}))}], "sec", "S1 Loading (%)", `G2 細磨  S1 Loading  Chuck#${data.chuck||"-"}  Income=${fmt(data.g2Income,1)}um  結果:${data.g2Result||"-"}`); activateTab("single");}
@@ -849,12 +849,52 @@
     async function parseS1PeakWaferFile(file){const key=fileKey(file.name),text=await readFileText(file);const data=key.endsWith(".ini")?parseWaferIniData(text,file.name):parseWaferCsvData(text,file.name);data.fullPath=String(file.webkitRelativePath||file.name||"");data.folderPath=fileFolderPath(file);return data;}
     function s1EpisodePoints(steps){const ep=extractFirstGrindEpisode(steps||[]).filter(p=>Number.isFinite(p.relativeSec)&&Number.isFinite(p.s1Loading)&&p.s1Loading>0);if(!ep.length)return[];const t0=ep[0].relativeSec;return ep.map((p,i)=>({raw:p,index:i,x:p.relativeSec-t0,y:p.s1Loading}));}
     function s1Median(vals){return quantile(vals,.5);}
+    function s1LoadingAccelerationMask(points){
+      const vals=points.map(p=>p.y).filter(Number.isFinite),mask=points.map(()=>false);
+      if(vals.length<12)return mask;
+      const q1=quantile(vals,.25),q3=quantile(vals,.75),diffs=[];
+      for(let i=1;i<points.length;i++)if(Number.isFinite(points[i].y)&&Number.isFinite(points[i-1].y))diffs.push(Math.abs(points[i].y-points[i-1].y));
+      const noise=Math.max(s1Median(diffs),.03),minRise=Math.max(.45,noise*8,(q3-q1)*.12),lookSec=18;
+      for(let i=0;i<points.length;i++){
+        if(i<8){mask[i]=true;continue;}
+        let from=i;
+        while(from>0&&(points[i].x-points[from-1].x)<=lookSec)from--;
+        const seg=points.slice(from,i+1).filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
+        if(seg.length<8)continue;
+        const n=Math.max(3,Math.floor(seg.length*.18)),a=avg(seg.slice(0,n).map(p=>p.y)),b=avg(seg.slice(-n).map(p=>p.y)),sec=Math.max(.1,seg[seg.length-1].x-seg[0].x),rise=b-a,slope=rise/sec;
+        if(rise>=minRise&&slope>=.018)mask[i]=true;
+      }
+      for(let i=1;i<mask.length;i++)if(mask[i-1]&&points[i].y>=points[i-1].y-noise*2)mask[i]=true;
+      return mask;
+    }
+    function s1AccelerationMask(points){
+      const speeds=points.map(p=>p.raw?.s1Speed).filter(v=>Number.isFinite(v)&&v>0);
+      if(speeds.length>=Math.max(8,points.length*.5)){
+        const sorted=speeds.slice().sort((a,b)=>a-b),stable=s1Median(sorted.slice(Math.floor(sorted.length*.8))),range=stable-min(speeds);
+        if(stable>0&&range>Math.max(30,stable*.03)){
+          const tol=Math.max(20,stable*.02),holdSec=2.0;let stableStart=NaN;
+          return points.map((p,i)=>{
+            const sp=p.raw?.s1Speed;
+            if(!Number.isFinite(sp)||sp<=0)return !Number.isFinite(stableStart);
+            const accelerating=sp<stable-tol;
+            if(accelerating){stableStart=NaN;return true;}
+            if(!Number.isFinite(stableStart))stableStart=p.x;
+            return (p.x-stableStart)<holdSec;
+          });
+        }
+        return points.map(()=>false);
+      }
+      return s1LoadingAccelerationMask(points);
+    }
+    function s1PeakCandidatePoints(points){const accel=s1AccelerationMask(points);return points.filter((p,i)=>!accel[i]&&Number.isFinite(p.y));}
     function detectS1PeakAnomalies(points){
       const vals=points.map(p=>p.y).filter(Number.isFinite);
       if(vals.length<12)return[];
+      const accel=s1AccelerationMask(points);
       const q1=quantile(vals,.25),q3=quantile(vals,.75),med=s1Median(vals),iqr=Math.max(q3-q1,.05),mean=avg(vals),sd=std(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05);
       const threshold=Math.max(q3+3*iqr,med+6*mad,mean+3*sd),localWindow=24,excludeWindow=3,spikeMin=Math.max(1.0,4*mad,iqr*1.2);
       const flags=points.map((p,i)=>{
+        if(accel[i])return false;
         if(i<2||i>points.length-3||p.y<q3+1.5*iqr)return false;
         if(!(p.y>=points[i-1].y&&p.y>=points[i+1].y))return false;
         const from=Math.max(0,i-localWindow),to=Math.min(points.length,i+localWindow+1);
@@ -901,7 +941,9 @@
           for(const g of["g1","g2"]){
             const pts=s1EpisodePoints(data[`${g}Steps`]);
             if(!pts.length)continue;
-            const peakPoint=pts.reduce((best,p)=>p.y>best.y?p:best,pts[0]),base={fileRef:file,fileName:file.name,path:data.fullPath,folder:data.folderPath,wafer:int(data.waferNumber)||int(fileKey(file.name).replace(/\D/g,"")),g:g.toUpperCase(),ch:int(data.chuck)||0,result:data[`${g}Result`]||"-"};
+            const candidates=s1PeakCandidatePoints(pts);
+            if(!candidates.length)continue;
+            const peakPoint=candidates.reduce((best,p)=>p.y>best.y?p:best,candidates[0]),base={fileRef:file,fileName:file.name,path:data.fullPath,folder:data.folderPath,wafer:int(data.waferNumber)||int(fileKey(file.name).replace(/\D/g,"")),g:g.toUpperCase(),ch:int(data.chuck)||0,result:data[`${g}Result`]||"-"};
             scanned.push({...base,peak:peakPoint.y,peakSec:peakPoint.x,peakIndex:peakPoint.index});
             for(const hit of detectS1PeakAnomalies(pts)){
               items.push({...base,sec:hit.point.x,peak:hit.point.y,baseline:hit.baseline,threshold:hit.threshold,delta:hit.delta,severity:hit.severity,index:hit.point.index,reason:"單片尖峰"});
@@ -1029,6 +1071,10 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.7.8",
+        "- S1 Peak Check now skips points while S1 spindle speed is still accelerating.",
+        "- Cross-wafer peak comparison also ignores acceleration-stage points.",
+        "",
         "v1.7.7",
         "- Added S1 Peak Check PPT export button.",
         "- S1 Peak PPT exports summary, abnormal list tables, and one S1 loading chart slide for each abnormal peak.",
@@ -1092,6 +1138,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.8",
+        "- S1 peak检查会略过 S1 主轴转速仍在加速中的资料点。",
+        "- 跨Wafer peak比较也会排除加速段资料点。",
+        "",
         "v1.7.7",
         "- 新增 S1 peak检查页面的 PPT 输出按钮。",
         "- S1 peak PPT 会输出摘要、异常清单表格，以及每笔异常 peak 的 S1 Load 图形投影片。",
@@ -1154,6 +1204,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.8",
+        "- S1 peak檢查會略過 S1 主軸轉速仍在加速中的資料點。",
+        "- 跨Wafer peak比較也會排除加速段資料點。",
         "",
         "v1.7.7",
         "- 新增 S1 peak檢查頁面的 PPT 輸出按鍵。",
