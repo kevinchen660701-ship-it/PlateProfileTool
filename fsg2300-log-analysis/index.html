@@ -292,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.8</div>
+      <div id="lblVersion">v1.8.9</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -1082,12 +1082,14 @@
       const btn=$("btnS1PeakPPT"),oldDisabled=btn.disabled;btn.disabled=true;
       try{
         const name=`FSG2300_S1Peak_${s1PptSafeName(state.s1PeakCheck.folderName)}_${new Date().toISOString().replace(/[-:T]/g,"").slice(0,14)}.pptx`;
+        let handle=null;
+        if(window.showSaveFilePicker){
+          try{handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:"PowerPoint",accept:{"application/vnd.openxmlformats-officedocument.presentationml.presentation":[".pptx"]}}]});}catch(err){if(err&&err.name==="AbortError"){renderS1PeakResults();return;}throw err;}
+        }
         $("lblS1PeakSummary").textContent=`S1 peak PPT產出中... 建立摘要`;
         await waitUiPaint();
         const slides=await buildS1PeakPptSlides(items),files=makePptxFiles(slides),blob=new Blob([zipStore(files)],{type:"application/vnd.openxmlformats-officedocument.presentationml.presentation"});
-        if(window.showSaveFilePicker){
-          let handle=null;
-          try{handle=await window.showSaveFilePicker({suggestedName:name,types:[{description:"PowerPoint",accept:{"application/vnd.openxmlformats-officedocument.presentationml.presentation":[".pptx"]}}]});}catch(err){if(err&&err.name==="AbortError"){renderS1PeakResults();return;}throw err;}
+        if(handle){
           const writable=await handle.createWritable();await writable.write(blob);await writable.close();
         }else{
           downloadBlob(blob,name);
@@ -1125,6 +1127,9 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.8.9",
+        "- Fixed S1 Peak PPT export failing after long generation by opening the save picker before building slides.",
         "",
         "v1.8.8",
         "- Removed the rise-seconds setting from S1 Peak Check.",
@@ -1229,6 +1234,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.8.9",
+        "- 修正 S1 peak PPT 大量图表产出完成后，浏览器拒绝开启储存视窗的问题。",
+        "",
         "v1.8.8",
         "- S1 peak检查移除拉升秒数设定。",
         "- S1拉升斜率改为先平滑化，再使用整段拉升负载斜率，不再使用短时间窗口判定。",
@@ -1331,6 +1339,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.8.9",
+        "- 修正 S1 peak PPT 大量圖表產出完成後，瀏覽器拒絕開啟儲存視窗的問題。",
         "",
         "v1.8.8",
         "- S1 peak檢查移除拉升秒數設定。",
