@@ -284,7 +284,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.7.4</div>
+      <div id="lblVersion">v1.7.5</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -869,14 +869,23 @@
       }
       return groups.sort((a,b)=>b.point.y-a.point.y);
     }
+    function waitUiPaint(){return new Promise(resolve=>(window.requestAnimationFrame||setTimeout)(resolve,0));}
     async function runS1PeakCheck(files){
       files=[...files].filter(isWaferLogFile).sort((a,b)=>String(a.webkitRelativePath||a.name).localeCompare(String(b.webkitRelativePath||b.name)));
       if(!files.length)throw new Error("找不到 Wxxxx.csv 或 Wxxxx.ini 檔案。");
       const items=[],scanned=[],folderName=files[0]?.webkitRelativePath?.split(/[\\/]/)[0]||"";
+      state.s1PeakCheck={items:[],selected:-1,folderName,totalWafers:files.length,chartToken:(state.s1PeakCheck.chartToken||0)+1};
+      activateTab("s1check");
       $("lblS1PeakSummary").textContent=`S1 peak檢查中... 0 / ${files.length}`;
+      $("dgvS1PeakResults").innerHTML='<table><tbody><tr><td>S1 peak檢查中...</td></tr></tbody></table>';
+      $("lblS1PeakChart").textContent="S1 peak檢查中...";
+      await waitUiPaint();
       for(let i=0;i<files.length;i++){
         const file=files[i];
-        if(i%10===0)$("lblS1PeakSummary").textContent=`S1 peak檢查中... ${i} / ${files.length}`;
+        if(i%5===0){
+          $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${i} / ${files.length}  ${file.name}`;
+          await waitUiPaint();
+        }
         try{
           const data=await parseS1PeakWaferFile(file);
           for(const g of["g1","g2"]){
@@ -891,8 +900,10 @@
         }catch(err){
           console.warn("S1 peak check skipped",file.name,err);
         }
-        if(i%25===24)await new Promise(resolve=>setTimeout(resolve,0));
+        if(i%25===24)await waitUiPaint();
       }
+      $("lblS1PeakSummary").textContent=`S1 peak檢查中... ${files.length} / ${files.length}  正在整理結果`;
+      await waitUiPaint();
       const keys=new Set(items.map(x=>`${x.path}|${x.g}|${x.index}`));
       for(const g of["G1","G2"]){
         const group=scanned.filter(x=>x.g===g),vals=group.map(x=>x.peak).filter(Number.isFinite);
@@ -962,6 +973,10 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.7.5",
+        "- Improved S1 Peak Check progress display for large folder scans.",
+        "- The check page opens immediately, shows the scanned wafer count and current file name, and refreshes before heavy reading starts.",
+        "",
         "v1.7.4",
         "- Optimized S1 Peak Check memory usage for large wafer counts.",
         "- During scanning, only summary data is kept; the selected wafer file is loaded again when drawing the chart.",
@@ -1013,6 +1028,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.7.5",
+        "- 改善 S1 peak检查大量资料夹扫描时的进度显示。",
+        "- 检查页面会立即开启，显示已扫描晶片数与目前档名，并在大量读档前先刷新画面。",
+        "",
         "v1.7.4",
         "- 优化 S1 peak检查大量晶片时的记忆体使用量。",
         "- 扫描时只保留摘要资料，点选异常项目要画图时才重新读取该片档案。",
@@ -1063,6 +1082,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.7.5",
+        "- 改善 S1 peak檢查大量資料夾掃描時的進度顯示。",
+        "- 檢查頁面會立即開啟，顯示已掃描晶片數與目前檔名，並在大量讀檔前先刷新畫面。",
         "",
         "v1.7.4",
         "- 優化 S1 peak檢查大量晶片時的記憶體使用量。",
