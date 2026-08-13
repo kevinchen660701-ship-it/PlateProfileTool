@@ -292,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.9.1</div>
+      <div id="lblVersion">v1.9.2</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -918,6 +918,24 @@
       return s1LoadingAccelerationMask(points);
     }
     function s1PeakCandidatePoints(points){const accel=s1AccelerationMask(points);return points.filter((p,i)=>!accel[i]&&Number.isFinite(p.y));}
+    function s1RisePreparationStartIndex(smooth,accel,valleyIndex,endIndex,noise,minDelta,minSlope){
+      valleyIndex=Math.max(0,Math.min(valleyIndex,endIndex));
+      if(endIndex-valleyIndex<2)return valleyIndex;
+      const minLift=Math.max(noise*3,minDelta*.12,.08),minLookSec=1.0,minPrepSlope=Math.max(minSlope*.12,.015);
+      for(let i=valleyIndex;i<endIndex;i++){
+        if(accel[i]||!Number.isFinite(smooth[i]?.x)||!Number.isFinite(smooth[i]?.y))continue;
+        let j=i+1;
+        while(j<endIndex&&smooth[j].x-smooth[i].x<minLookSec)j++;
+        j=Math.min(endIndex,Math.max(j,i+2));
+        const dt=Math.max(.001,smooth[j].x-smooth[i].x),lift=smooth[j].y-smooth[i].y,finalRise=smooth[endIndex].y-smooth[i].y;
+        if(lift>=minLift&&lift/dt>=minPrepSlope&&finalRise>=minDelta)return i;
+      }
+      const base=smooth[valleyIndex]?.y;
+      if(Number.isFinite(base)){
+        for(let i=valleyIndex+1;i<endIndex;i++)if(!accel[i]&&smooth[i].y-base>=minLift)return Math.max(valleyIndex,i-1);
+      }
+      return valleyIndex;
+    }
     function mergeS1PeakHits(hits){
       const out=[];
       for(const hit of hits.sort((a,b)=>a.point.x-b.point.x)){
@@ -968,9 +986,10 @@
         const p=points[i],sp=smooth[i];
         if(accel[i]||!Number.isFinite(sp.y)){valley=null;continue;}
         if(!valley||sp.y<valley.y-noise*3){valley=sp;valleyIndex=i;continue;}
-        const dt=sp.x-valley.x,rise=sp.y-valley.y,slope=rise/Math.max(.001,dt);
+        const startIndex=s1RisePreparationStartIndex(smooth,accel,valleyIndex,i,noise,minDelta,minSlope),start=smooth[startIndex]||valley;
+        const dt=sp.x-start.x,rise=sp.y-start.y,slope=rise/Math.max(.001,dt);
         if(dt>=.5&&rise>minDelta&&slope>=minSlope&&p.x-lastHitX>S1_RAPID_CLUSTER_SEC&&!hits.some(h=>Math.abs(p.x-h.point.x)<=S1_RAPID_CLUSTER_SEC)){
-          if(mark(p,valleyIndex,i,valley.y,"整段拉升斜率",slope,"slope"))lastHitX=p.x;
+          if(mark(p,startIndex,i,start.y,"整段拉升斜率",slope,"slope"))lastHitX=p.x;
         }
         if(i>1&&Number.isFinite(smooth[i-1].y)&&smooth[i-1].y-sp.y>Math.max(minDelta*.6,noise*8)){
           valley=sp;valleyIndex=i;
@@ -1169,6 +1188,9 @@
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
         "",
+        "v1.9.2",
+        "- S1 full-rise slope detection now filters the start point to the beginning of the load-preparation rise before calculating slope and drawing annotations.",
+        "",
         "v1.9.1",
         "- Fixed S1 slope start/end annotations not appearing on the web chart and PPT chart.",
         "",
@@ -1282,6 +1304,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.9.2",
+        "- S1 整段拉升斜率现在会先过滤 start 点，从负载准备开始拉升的位置起算，再计算斜率并绘制标注。",
+        "",
         "v1.9.1",
         "- 修正 S1 拉升斜率 start / end 标注没有显示在网页图表与 PPT 图表的问题。",
         "",
@@ -1394,6 +1419,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.9.2",
+        "- S1 整段拉升斜率現在會先過濾 start 點，從負載準備開始拉升的位置起算，再計算斜率並繪製標註。",
         "",
         "v1.9.1",
         "- 修正 S1 拉升斜率 start / end 標註沒有顯示在網頁圖表與 PPT 圖表的問題。",
