@@ -292,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.8.9</div>
+      <div id="lblVersion">v1.9.0</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -733,12 +733,13 @@
     function drawLines(canvas,series,xLabel,yLabel,title,options={}){
       const {ctx,w,h}=setupCanvas(canvas),ss=chartSeries(series);
       const stripLines=(options.stripLines||[]).filter(s=>Number.isFinite(s.value));
+      const annotations=(options.annotations||[]).filter(a=>Number.isFinite(a.x1)&&Number.isFinite(a.y1)&&Number.isFinite(a.x2)&&Number.isFinite(a.y2));
       const gridColor="#bcc7d3",axisColor="#202936",compact=h<380;
       ctx.clearRect(0,0,w,h);ctx.fillStyle="#fff";ctx.fillRect(0,0,w,h);
       ctx.font="14px Microsoft JhengHei UI, Arial";ctx.fillStyle="#1f2937";ctx.textAlign="center";ctx.fillText(title||"",w/2,compact?18:22);
       const legendX=96,legendY=compact?44:60,rows=legendRows(ctx,ss,legendX,w-34);
       const pad={l:76,r:34,t:Math.max(compact?78:110,legendY+rows*24+(compact?4:12)),b:compact?46:62};
-      const pw=Math.max(50,w-pad.l-pad.r),ph=Math.max(50,h-pad.t-pad.b),pts=ss.flatMap(s=>s.points),yValues=pts.map(p=>p.y).concat(stripLines.map(s=>s.value));
+      const pw=Math.max(50,w-pad.l-pad.r),ph=Math.max(50,h-pad.t-pad.b),pts=ss.flatMap(s=>s.points),xValues=pts.map(p=>p.x).concat(annotations.flatMap(a=>[a.x1,a.x2])),yValues=pts.map(p=>p.y).concat(stripLines.map(s=>s.value)).concat(annotations.flatMap(a=>[a.y1,a.y2]));
       ctx.fillStyle="#374151";ctx.font="12px Consolas, monospace";
       ctx.save();ctx.translate(18,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.textAlign="center";ctx.fillText(yLabel||"",0,0);ctx.restore();
       ctx.textAlign="center";ctx.fillText(xLabel||"",pad.l+pw/2,h-(compact?8:14));
@@ -746,8 +747,8 @@
       let yMin=Number.isFinite(options.yMin)?options.yMin:0,yMax=Number.isFinite(options.yMax)?options.yMax:1;
       let xTicks=[],yTicks=[];const waferAxis=isWaferAxis(xLabel);
       if(pts.length){
-        if(!Number.isFinite(options.xMin))xMin=min(pts.map(p=>p.x));
-        if(!Number.isFinite(options.xMax))xMax=max(pts.map(p=>p.x));
+        if(!Number.isFinite(options.xMin))xMin=min(xValues);
+        if(!Number.isFinite(options.xMax))xMax=max(xValues);
         const rawYMin=min(yValues),rawYMax=max(yValues);
         if(waferAxis){xMin=Math.floor(xMin);xMax=Math.ceil(xMax);}
         if(xMin===xMax){xMin-=1;xMax+=1;}
@@ -808,6 +809,24 @@
         s.points.filter(pt=>pt.marker).forEach(pt=>{const px=sx(pt.x),py=sy(pt.y),mc=pt.markerColor||"#d81e05";ctx.save();ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.stroke();ctx.strokeStyle=mc;ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(px,py,5.5,0,Math.PI*2);ctx.stroke();ctx.restore();});
       });
       if(ctx.setLineDash)ctx.setLineDash([]);
+      annotations.forEach(a=>{
+        const c=a.color||"#d81e05",x1=sx(a.x1),y1=sy(a.y1),x2=sx(a.x2),y2=sy(a.y2),ang=Math.atan2(y2-y1,x2-x1),head=12;
+        ctx.save();
+        ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=2.2;
+        if(ctx.setLineDash)ctx.setLineDash(a.dash||[8,5]);
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+        if(ctx.setLineDash)ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(x2,y2);
+        ctx.lineTo(x2-head*Math.cos(ang-Math.PI/6),y2-head*Math.sin(ang-Math.PI/6));
+        ctx.lineTo(x2-head*Math.cos(ang+Math.PI/6),y2-head*Math.sin(ang+Math.PI/6));
+        ctx.closePath();ctx.fill();
+        for(const [cx,cy] of [[x1,y1],[x2,y2]]){
+          ctx.strokeStyle="#fff";ctx.lineWidth=5;ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);ctx.stroke();
+          ctx.strokeStyle=c;ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(cx,cy,6,0,Math.PI*2);ctx.stroke();
+        }
+        ctx.restore();
+      });
       ctx.restore();
       stripLines.forEach(s=>{
         const c=colorMap[s.color]||s.color||"#0072bd",yy=sy(s.value),label=String(s.label||"");
@@ -920,13 +939,13 @@
       minDelta=Number.isFinite(minDelta)&&minDelta>0?minDelta:S1_PEAK_MIN_DELTA;
       minSlope=Number.isFinite(minSlope)&&minSlope>0?minSlope:S1_SLOPE_MIN;
       const med=s1Median(vals),mad=Math.max(s1Median(vals.map(v=>Math.abs(v-med))),.05),noise=Math.max(s1Median(diffs),.03),riseStep=Math.max(minDelta,noise*5),hits=[],used=new Set();
-      const mark=(point,start,end,baseline,reason,slope=0)=>{
+      const mark=(point,start,end,baseline,reason,slope=0,kind="step")=>{
         const delta=point.y-baseline;
         if(delta<=minDelta)return false;
         const key=`${reason}:${point.index}`;
         if(used.has(key))return false;
         used.add(key);
-        hits.push({point,start,end,threshold:baseline+minDelta,baseline,delta,slope,severity:Math.max(delta/Math.max(mad,noise,.05),slope/Math.max(minSlope,.001)),reason});
+        hits.push({point,start,end,threshold:baseline+minDelta,baseline,delta,slope,severity:Math.max(delta/Math.max(mad,noise,.05),slope/Math.max(minSlope,.001)),reason,kind});
         return true;
       };
       for(let i=2;i<points.length-2;i++){
@@ -934,7 +953,7 @@
         if(!accel[i-1]&&Number.isFinite(points[i-1].y)){
           const prev=points[i-1],step=points[i].y-prev.y,dt=Math.max(.001,points[i].x-prev.x),slope=step/dt;
           if(step>minDelta&&step>=riseStep&&slope>=minSlope){
-            mark(points[i],i,i,prev.y,"急升",slope);
+            mark(points[i],i,i,prev.y,"急升",slope,"step");
             continue;
           }
         }
@@ -951,7 +970,7 @@
         if(!valley||sp.y<valley.y-noise*3){valley=sp;valleyIndex=i;continue;}
         const dt=sp.x-valley.x,rise=sp.y-valley.y,slope=rise/Math.max(.001,dt);
         if(dt>=.5&&rise>minDelta&&slope>=minSlope&&p.x-lastHitX>S1_RAPID_CLUSTER_SEC&&!hits.some(h=>Math.abs(p.x-h.point.x)<=S1_RAPID_CLUSTER_SEC)){
-          if(mark(p,valleyIndex,i,valley.y,"整段拉升斜率",slope))lastHitX=p.x;
+          if(mark(p,valleyIndex,i,valley.y,"整段拉升斜率",slope,"slope"))lastHitX=p.x;
         }
         if(i>1&&Number.isFinite(smooth[i-1].y)&&smooth[i-1].y-sp.y>Math.max(minDelta*.6,noise*8)){
           valley=sp;valleyIndex=i;
@@ -986,7 +1005,7 @@
             if(!pts.length)continue;
             const base={fileRef:file,fileName:file.name,path:data.fullPath,folder:data.folderPath,wafer:int(data.waferNumber)||int(fileKey(file.name).replace(/\D/g,"")),g:g.toUpperCase(),ch:int(data.chuck)||0,result:data[`${g}Result`]||"-"};
             for(const hit of detectS1PeakAnomalies(pts,threshold,slopeThreshold)){
-              items.push({...base,sec:hit.point.x,peak:hit.point.y,baseline:hit.baseline,threshold:hit.threshold,delta:hit.delta,slope:hit.slope,severity:hit.severity,index:hit.point.index,reason:hit.reason||"急升"});
+              items.push({...base,sec:hit.point.x,peak:hit.point.y,baseline:hit.baseline,threshold:hit.threshold,delta:hit.delta,slope:hit.slope,severity:hit.severity,start:hit.start,end:hit.end,index:hit.point.index,kind:hit.kind||"step",reason:hit.reason||"急升"});
             }
           }
         }catch(err){
@@ -1016,7 +1035,13 @@
       if(!pts.length)return{xMin:0};
       const fullMin=0,fullMax=Math.max(...pts.map(p=>p.x),1),zoom=Math.max(1,Math.min(12,state.s1PeakCheck.zoom||1));
       if(zoom<=1.0001)return{xMin:0};
-      const fullSpan=Math.max(1,fullMax-fullMin),span=Math.max(5,fullSpan/zoom),center=Number.isFinite(item.sec)?item.sec:(fullMin+fullMax)/2;
+      const seg=s1SlopeSegment(series,item),fullSpan=Math.max(1,fullMax-fullMin);
+      let span=Math.max(5,fullSpan/zoom),center=Number.isFinite(item.sec)?item.sec:(fullMin+fullMax)/2;
+      if(seg){
+        const segSpan=Math.abs(seg.end.x-seg.start.x);
+        span=Math.max(span,segSpan*1.35+2);
+        center=(seg.start.x+seg.end.x)/2;
+      }
       let xMin=Math.max(fullMin,center-span/2),xMax=Math.min(fullMax,center+span/2);
       if(xMax-xMin<span){if(xMin<=fullMin)xMax=Math.min(fullMax,fullMin+span);else if(xMax>=fullMax)xMin=Math.max(fullMin,fullMax-span);}
       const visible=pts.filter(p=>p.x>=xMin&&p.x<=xMax);
@@ -1046,22 +1071,38 @@
         const d=item.data||await parseS1PeakWaferFile(item.fileRef);
         item.data=d;
         if(token!==state.s1PeakCheck.chartToken)return;
-        const l=L(),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
+        const l=L(),slope=isS1SlopeHit(item),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
         const series=[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}];
         const zoom=state.s1PeakCheck.zoom||1,zoomText=zoom>1.0001?`  x${fmt(zoom,1)}`:"";
         $("lblS1PeakChart").textContent=title+zoomText;
-        drawLines($("chtS1PeakCheck"),series,procTimeAxisLabel(),l.loadingY,title+zoomText,s1PeakZoomOptions(series,item));
+        const chartOptions=s1PeakZoomOptions(series,item);
+        chartOptions.annotations=s1SlopeAnnotations(series,item);
+        drawLines($("chtS1PeakCheck"),series,procTimeAxisLabel(),l.loadingY,title+zoomText,chartOptions);
       }catch(err){
         if(token===state.s1PeakCheck.chartToken)$("lblS1PeakChart").textContent=`${title}  載入失敗：${err.message||String(err)}`;
       }
     }
     function s1PptSafeName(v){return String(v||"S1Peak").replace(/[\\/:*?"<>|]/g,"_").slice(0,80);}
     function s1PeakPptRows(items){return items.map((x,i)=>[i+1,`${x.folder}/${x.fileName}`,`W${String(x.wafer).padStart(4,"0")}`,`${x.g} C${x.ch||"-"}`,x.result,fmt(x.sec,1),fmt(x.peak,1),fmt(x.baseline,1),fmt(x.delta,1),fmt(x.slope,2),x.reason||""]);}
+    function isS1SlopeHit(item){return item?.kind==="slope"||(/斜率|slope/i.test(String(item?.reason||""))&&Number(item?.start)!==Number(item?.end));}
+    function s1SlopeSegment(series,item){
+      if(!isS1SlopeHit(item))return null;
+      const g=String(item.g||"").toUpperCase(),startIndex=Number(item.start),endIndex=Number(item.end);
+      if(!Number.isFinite(startIndex)||!Number.isFinite(endIndex))return null;
+      const target=series.find(s=>String(s.name||s.legendName||"").toUpperCase().startsWith(g));
+      const points=target?.points||[],start=points.find(p=>p.index===startIndex),end=points.find(p=>p.index===endIndex)||points.find(p=>p.index===Number(item.index));
+      return start&&end?{start,end}:null;
+    }
+    function s1SlopeAnnotations(series,item){
+      const seg=s1SlopeSegment(series,item);
+      return seg?[{x1:seg.start.x,y1:seg.start.y,x2:seg.end.x,y2:seg.end.y,color:"#d81e05",dash:[8,5]}]:[];
+    }
     async function s1PeakPptChart(item){
       const d=item.data||await parseS1PeakWaferFile(item.fileRef),l=L();
       return pptChart(c=>{
-        const make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
-        drawLines(c,[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}],procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`,{xMin:0});
+        const slope=isS1SlopeHit(item),make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
+        const series=[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}];
+        drawLines(c,series,procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`,{xMin:0,annotations:s1SlopeAnnotations(series,item)});
       });
     }
     async function buildS1PeakPptSlides(items){
@@ -1127,6 +1168,10 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.9.0",
+        "- S1 slope anomalies now mark the calculated start and end points with circles and a red dashed arrow pointing to the end point.",
+        "- S1 Peak PPT charts use the same slope-segment annotation as the web chart.",
         "",
         "v1.8.9",
         "- Fixed S1 Peak PPT export failing after long generation by opening the save picker before building slides.",
@@ -1234,6 +1279,10 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.9.0",
+        "- S1 拉升斜率异常现在会在计算 start / end 点各画一个圆圈，并用红色虚线箭头标出斜率计算区段。",
+        "- S1 peak PPT 图表同步使用与网页相同的斜率区段标注。",
+        "",
         "v1.8.9",
         "- 修正 S1 peak PPT 大量图表产出完成后，浏览器拒绝开启储存视窗的问题。",
         "",
@@ -1339,6 +1388,10 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.9.0",
+        "- S1 拉升斜率異常現在會在計算 start / end 點各畫一個圓圈，並用紅色虛線箭頭標出斜率計算區段。",
+        "- S1 peak PPT 圖表同步使用與網頁相同的斜率區段標註。",
         "",
         "v1.8.9",
         "- 修正 S1 peak PPT 大量圖表產出完成後，瀏覽器拒絕開啟儲存視窗的問題。",
