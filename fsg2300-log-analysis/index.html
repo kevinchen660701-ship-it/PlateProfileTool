@@ -292,7 +292,7 @@
       <button id="btnLangEn" class="langbtn">EN</button>
       <button id="btnAbout">?</button>
       <div id="lblPath">尚未載入</div>
-      <div id="lblVersion">v1.9.0</div>
+      <div id="lblVersion">v1.9.1</div>
       <input id="folderInput" class="hidden" type="file" webkitdirectory directory multiple>
       <input id="singleFileInput" class="hidden" type="file" accept=".csv,.ini">
       <input id="s1PeakInput" class="hidden" type="file" webkitdirectory directory multiple>
@@ -1071,7 +1071,7 @@
         const d=item.data||await parseS1PeakWaferFile(item.fileRef);
         item.data=d;
         if(token!==state.s1PeakCheck.chartToken)return;
-        const l=L(),slope=isS1SlopeHit(item),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
+        const l=L(),slope=isS1SlopeHit(item),make=(g,color)=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,index:p.index,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:`${g.toUpperCase()} S1\n${procTimeAxisLabel()}: ${oneDecimal(p.x)}\n${l.loadingY}: ${oneDecimal(p.y)}`}));
         const series=[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1","g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2","g2")}];
         const zoom=state.s1PeakCheck.zoom||1,zoomText=zoom>1.0001?`  x${fmt(zoom,1)}`:"";
         $("lblS1PeakChart").textContent=title+zoomText;
@@ -1100,7 +1100,7 @@
     async function s1PeakPptChart(item){
       const d=item.data||await parseS1PeakWaferFile(item.fileRef),l=L();
       return pptChart(c=>{
-        const slope=isS1SlopeHit(item),make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
+        const slope=isS1SlopeHit(item),make=g=>s1EpisodePoints(d[`${g}Steps`]).map(p=>({x:p.x,y:p.y,index:p.index,marker:!slope&&item.g===g.toUpperCase()&&p.index===item.index,markerColor:"#d81e05",hoverLabel:`${g.toUpperCase()} S1`,hoverText:""}));
         const series=[{name:"G1 S1",legendName:"G1 S1",color:"g1",points:make("g1")},{name:"G2 S1",legendName:"G2 S1",color:"g2",points:make("g2")}];
         drawLines(c,series,procTimeAxisLabel(),l.loadingY,`S1 peak檢查  W${String(item.wafer).padStart(4,"0")}  ${item.g}  Peak=${fmt(item.peak,1)}  sec=${fmt(item.sec,1)}`,{xMin:0,annotations:s1SlopeAnnotations(series,item)});
       });
@@ -1168,6 +1168,9 @@
     function releaseNotes(){
       if(state.lang==="en")return [
         "FSG2300 Log Analysis Release Notes",
+        "",
+        "v1.9.1",
+        "- Fixed S1 slope start/end annotations not appearing on the web chart and PPT chart.",
         "",
         "v1.9.0",
         "- S1 slope anomalies now mark the calculated start and end points with circles and a red dashed arrow pointing to the end point.",
@@ -1279,6 +1282,9 @@
       if(state.lang==="cn")return [
         "FSG2300 Log Analysis Release 说明",
         "",
+        "v1.9.1",
+        "- 修正 S1 拉升斜率 start / end 标注没有显示在网页图表与 PPT 图表的问题。",
+        "",
         "v1.9.0",
         "- S1 拉升斜率异常现在会在计算 start / end 点各画一个圆圈，并用红色虚线箭头标出斜率计算区段。",
         "- S1 peak PPT 图表同步使用与网页相同的斜率区段标注。",
@@ -1388,6 +1394,9 @@
       ].join("\n");
       return [
         "FSG2300 Log Analysis Release 說明",
+        "",
+        "v1.9.1",
+        "- 修正 S1 拉升斜率 start / end 標註沒有顯示在網頁圖表與 PPT 圖表的問題。",
         "",
         "v1.9.0",
         "- S1 拉升斜率異常現在會在計算 start / end 點各畫一個圓圈，並用紅色虛線箭頭標出斜率計算區段。",
