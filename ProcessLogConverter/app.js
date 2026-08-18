@@ -394,7 +394,7 @@ Item 4
         await saveDirectoryHandle("outputHandle", outputBaseFolder);
         saveOutputFolderName(outputBaseFolder.name);
         ui.outputFolderLabel.textContent = "輸出資料夾：" + outputBaseFolder.name + "\\" + outputFolderName;
-        outputDirectoryHandle = await outputBaseFolder.getDirectoryHandle(outputFolderName, { create: true });
+        outputDirectoryHandle = outputBaseFolder;
       } else {
         ui.outputFolderLabel.textContent = "輸出資料夾：" + outputFolderName + ".zip";
       }
@@ -418,7 +418,7 @@ Item 4
       throwIfCancellationRequested();
 
       if (outputDirectoryHandle) {
-        await writeOutputsToDirectory(outputDirectoryHandle, result.outputs, reportWriteProgress);
+        await writeOutputsToDirectory(outputDirectoryHandle, outputFolderName, result.outputs, reportWriteProgress);
       } else {
         downloadZip(outputFolderName + ".zip", result.outputs.map((file) => ({
           path: outputFolderName + "/" + file.path,
@@ -570,8 +570,17 @@ Item 4
   }
 
   function showError(error) {
-    const message = error && error.message ? error.message : String(error || "Unknown error.");
+    const message = isStaleFileSystemError(error)
+      ? "輸出資料夾狀態被系統更新，瀏覽器寫入失敗。請確認輸出資料夾或正在寫入的 xlsx/csv 沒有被檔案總管、Excel 或同步軟體占用後，再按「轉換檔案」重試。"
+      : (error && error.message ? error.message : String(error || "Unknown error."));
     window.alert(message);
+  }
+
+  function isStaleFileSystemError(error) {
+    const message = String(error && error.message || "").toLowerCase();
+    return message.includes("state cached")
+      || message.includes("state had changed")
+      || message.includes("read from disk");
   }
 
   function loadSettings() {
@@ -1723,20 +1732,32 @@ Item 4
       .replace(/'/g, "&apos;");
   }
 
-  async function writeOutputsToDirectory(outputRootHandle, outputs, progress) {
+  async function writeOutputsToDirectory(outputBaseHandle, outputRootName, outputs, progress) {
     for (let i = 0; i < outputs.length; i++) {
       throwIfCancellationRequested();
       const output = outputs[i];
       progress(i + 1, outputs.length, output.path);
-      await writeOutputFile(outputRootHandle, output);
+      await writeOutputFileWithRetry(outputBaseHandle, outputRootName, output);
       await nextFrame();
     }
   }
 
-  async function writeOutputFile(rootHandle, output) {
-    const parts = normalizePath(output.path).split("/").filter(Boolean);
+  async function writeOutputFileWithRetry(outputBaseHandle, outputRootName, output) {
+    try {
+      await writeOutputFile(outputBaseHandle, outputRootName, output);
+    } catch (error) {
+      if (!isStaleFileSystemError(error)) {
+        throw error;
+      }
+      await nextFrame();
+      await writeOutputFile(outputBaseHandle, outputRootName, output);
+    }
+  }
+
+  async function writeOutputFile(outputBaseHandle, outputRootName, output) {
+    const parts = [outputRootName].concat(normalizePath(output.path).split("/").filter(Boolean));
     const fileName = parts.pop();
-    let dir = rootHandle;
+    let dir = outputBaseHandle;
     for (const part of parts) {
       dir = await dir.getDirectoryHandle(part, { create: true });
     }
