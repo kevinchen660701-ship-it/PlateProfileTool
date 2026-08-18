@@ -363,13 +363,19 @@ Item 4
 
     try {
       sourceFolder = await buildSourceFromFileList(files);
-      saveSourceFolderName(sourceFolder.displayName);
-      ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
       const hasProcessLog = hasProcessLogFolder(sourceFolder);
+      if (hasProcessLog) {
+        saveSourceFolderName(sourceFolder.displayName);
+        ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+      } else {
+        clearSourceFolderName();
+        ui.sourceFolderLabel.textContent = "來源資料夾：未選取";
+        sourceFolder = null;
+      }
       ui.convertButton.disabled = false;
       ui.statusLabel.textContent = hasProcessLog
         ? "已選取資料夾，可開始轉換"
-        : "這個資料夾和子資料夾內找不到 ProcessLog.ini，請選原始 Ini 來源資料夾";
+        : "剛選的資料夾找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾，不要選 PPT 輸出資料夾";
     } catch (error) {
       showError(error);
     }
@@ -453,7 +459,7 @@ Item 4
     }
 
     if (sourceFolder && !hasProcessLogFolder(sourceFolder) && !savedSourceHandle) {
-      ui.statusLabel.textContent = "目前來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選取原始 Ini 來源資料夾";
+      ui.statusLabel.textContent = "目前來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選 Desktop\\Ini 底下的原始來源資料夾";
       return false;
     }
 
@@ -471,7 +477,10 @@ Item 4
         ui.convertButton.disabled = false;
         ui.statusLabel.textContent = hasProcessLog
           ? "已選取資料夾，可開始轉換"
-          : "目前授權的來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選取原始 Ini 來源資料夾";
+          : "目前授權的來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選 Desktop\\Ini 底下的原始來源資料夾";
+        if (!hasProcessLog) {
+          await clearSourceFolderRecord();
+        }
         return hasProcessLog;
       } catch (error) {
         sourceFolder = null;
@@ -486,20 +495,26 @@ Item 4
   }
 
   async function setSourceDirectoryHandle(handle) {
-    savedSourceHandle = handle;
+    savedSourceHandle = null;
     sourceFolder = null;
     ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
     ui.statusLabel.textContent = "正在檢查來源資料夾...";
-    saveSourceFolderName(handle.name);
-    await saveDirectoryHandle("sourceHandle", handle);
 
     sourceFolder = await buildSourceFromDirectoryHandle(handle);
     const hasProcessLog = hasProcessLogFolder(sourceFolder);
-    ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+    if (hasProcessLog) {
+      savedSourceHandle = handle;
+      saveSourceFolderName(handle.name);
+      await saveDirectoryHandle("sourceHandle", handle);
+      ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+    } else {
+      sourceFolder = null;
+      await clearSourceFolderRecord();
+    }
     ui.convertButton.disabled = false;
     ui.statusLabel.textContent = hasProcessLog
       ? "已選取資料夾，可開始轉換"
-      : "這個資料夾和子資料夾內找不到 ProcessLog.ini，請選原始 Ini 來源資料夾";
+      : "剛選的資料夾「" + handle.name + "」找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾，不要選 PPT 輸出資料夾";
   }
 
   async function pickSourceDirectory() {
@@ -652,8 +667,21 @@ Item 4
     localStorage.setItem("FSG2300.HasSourceFolder", name ? "1" : "");
   }
 
+  function clearSourceFolderName() {
+    localStorage.removeItem("FSG2300.SourceFolderName");
+    localStorage.removeItem("FSG2300.HasSourceFolder");
+  }
+
   function saveOutputFolderName(name) {
     localStorage.setItem("FSG2300.OutputBaseFolderName", name || "");
+  }
+
+  async function clearSourceFolderRecord() {
+    await clearDirectoryHandle("sourceHandle");
+    savedSourceHandle = null;
+    sourceFolder = null;
+    clearSourceFolderName();
+    ui.sourceFolderLabel.textContent = "來源資料夾：未選取";
   }
 
   async function restoreDirectoryHandles() {
