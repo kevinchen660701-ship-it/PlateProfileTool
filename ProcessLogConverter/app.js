@@ -339,29 +339,14 @@ Item 4
 
     try {
       if ("showDirectoryPicker" in window) {
-        const handle = await window.showDirectoryPicker({ mode: "read" });
-        savedSourceHandle = handle;
-        sourceFolder = null;
-        ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
-        ui.statusLabel.textContent = "已選取資料夾，可開始轉換";
-        ui.convertButton.disabled = false;
-        saveSourceFolderName(handle.name);
-        await saveDirectoryHandle("sourceHandle", handle);
-        saveSettings();
+        const handle = await pickSourceDirectory();
+        await setSourceDirectoryHandle(handle);
         return;
       } else {
         ui.folderInput.value = "";
         ui.folderInput.click();
         return;
       }
-
-      saveSettings();
-      ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-      const hasProcessLog = hasProcessLogFolder(sourceFolder);
-      ui.convertButton.disabled = false;
-      ui.statusLabel.textContent = hasProcessLog
-        ? "已選取資料夾，可開始轉換"
-        : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
     } catch (error) {
       if (error && error.name === "AbortError") {
         return;
@@ -378,10 +363,10 @@ Item 4
 
     try {
       sourceFolder = await buildSourceFromFileList(files);
-      saveSettings();
+      saveSourceFolderName(sourceFolder.displayName);
       ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
       const hasProcessLog = hasProcessLogFolder(sourceFolder);
-      ui.convertButton.disabled = false;
+      ui.convertButton.disabled = !hasProcessLog;
       ui.statusLabel.textContent = hasProcessLog
         ? "已選取資料夾，可開始轉換"
         : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
@@ -395,7 +380,7 @@ Item 4
       return;
     }
 
-    if (!await ensureSourceFolderReady()) {
+    if (!await prepareSourceForConversion()) {
       return;
     }
 
@@ -406,7 +391,7 @@ Item 4
         outputBaseFolder = await pickOutputDirectory();
         savedOutputHandle = outputBaseFolder;
         await saveDirectoryHandle("outputHandle", outputBaseFolder);
-        saveSettings();
+        saveOutputFolderName(outputBaseFolder.name);
         ui.outputFolderLabel.textContent = "輸出資料夾：" + outputBaseFolder.name + "\\" + outputFolderName;
         outputDirectoryHandle = await outputBaseFolder.getDirectoryHandle(outputFolderName, { create: true });
       } else {
@@ -462,79 +447,82 @@ Item 4
     }
   }
 
-  async function ensureSourceFolderReady() {
+  async function prepareSourceForConversion() {
     if (sourceFolder && hasProcessLogFolder(sourceFolder)) {
       return true;
     }
 
     if (savedSourceHandle) {
       try {
-        if (await ensurePermission(savedSourceHandle, "read")) {
-          ui.statusLabel.textContent = "正在檢查來源資料夾...";
-          sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
-          ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-          if (hasProcessLogFolder(sourceFolder)) {
-            ui.convertButton.disabled = false;
-            ui.statusLabel.textContent = "已選取資料夾，可開始轉換";
-            return true;
-          }
+        if (!await ensurePermission(savedSourceHandle, "read")) {
+          ui.statusLabel.textContent = "來源資料夾尚未授權，請按「選取資料夾」重新選取";
+          return false;
         }
-      } catch {
+
+        ui.statusLabel.textContent = "正在檢查來源資料夾...";
+        sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
+        ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+        const hasProcessLog = hasProcessLogFolder(sourceFolder);
+        ui.convertButton.disabled = !hasProcessLog;
+        ui.statusLabel.textContent = hasProcessLog
+          ? "已選取資料夾，可開始轉換"
+          : "目前授權的來源資料夾找不到 ProcessLog.ini，請重新按「選取資料夾」選一次";
+        return hasProcessLog;
+      } catch (error) {
         sourceFolder = null;
+        ui.convertButton.disabled = true;
+        showError(error);
+        return false;
       }
-
-      await clearSourceFolderRecord();
-      ui.statusLabel.textContent = "目前授權的來源資料夾找不到 ProcessLog.ini，請重新選取來源資料夾";
     }
 
-    if ("showDirectoryPicker" in window) {
-      return await pickSourceDirectoryAndLoad();
-    }
-
-    window.alert("請先按「選取資料夾」選擇來源資料夾。");
+    window.alert("請先選取來源資料夾。");
     return false;
   }
 
-  async function pickSourceDirectoryAndLoad() {
+  async function setSourceDirectoryHandle(handle) {
+    savedSourceHandle = handle;
+    sourceFolder = null;
+    ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
+    ui.statusLabel.textContent = "正在檢查來源資料夾...";
+    saveSourceFolderName(handle.name);
+    await saveDirectoryHandle("sourceHandle", handle);
+
+    sourceFolder = await buildSourceFromDirectoryHandle(handle);
+    const hasProcessLog = hasProcessLogFolder(sourceFolder);
+    ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+    ui.convertButton.disabled = !hasProcessLog;
+    ui.statusLabel.textContent = hasProcessLog
+      ? "已選取資料夾，可開始轉換"
+      : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
+  }
+
+  async function pickSourceDirectory() {
+    const options = {
+      id: "fsg2300-source-folder",
+      mode: "read"
+    };
+    if (savedSourceHandle) {
+      options.startIn = savedSourceHandle;
+    }
     try {
-      const handle = await window.showDirectoryPicker({ mode: "read" });
-      savedSourceHandle = handle;
-      sourceFolder = null;
-      ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
-      ui.statusLabel.textContent = "正在檢查來源資料夾...";
-      saveSourceFolderName(handle.name);
-      await saveDirectoryHandle("sourceHandle", handle);
-      saveSettings();
-
-      sourceFolder = await buildSourceFromDirectoryHandle(handle);
-      const hasProcessLog = hasProcessLogFolder(sourceFolder);
-      ui.convertButton.disabled = false;
-      ui.statusLabel.textContent = hasProcessLog
-        ? "已選取資料夾，可開始轉換"
-        : "這個資料夾和子資料夾內找不到 ProcessLog.ini，請重新選取來源資料夾";
-      if (!hasProcessLog) {
-        sourceFolder = null;
-        return false;
-      }
-
-      ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-      return true;
+      return await window.showDirectoryPicker(options);
     } catch (error) {
-      if (error && error.name === "AbortError") {
-        return false;
+      if (error && error.name === "TypeError") {
+        return await window.showDirectoryPicker({ mode: "read" });
       }
-      showError(error);
-      return false;
+      throw error;
     }
   }
 
   async function pickOutputDirectory() {
+    const options = {
+      id: "fsg2300-output-folder",
+      mode: "readwrite",
+      startIn: savedOutputHandle || "desktop"
+    };
     try {
-      return await window.showDirectoryPicker({
-        id: "fsg2300-output-folder",
-        mode: "readwrite",
-        startIn: "desktop"
-      });
+      return await window.showDirectoryPicker(options);
     } catch (error) {
       if (error && error.name === "TypeError") {
         return await window.showDirectoryPicker({ mode: "readwrite" });
@@ -564,7 +552,7 @@ Item 4
   function setBusy(value) {
     isBusy = value;
     ui.selectFolderButton.disabled = value;
-    ui.convertButton.disabled = value;
+    ui.convertButton.disabled = value || !canTryConvert();
     ui.cancelButton.disabled = !value;
     ui.cancelButton.hidden = !value;
     ui.releaseNoteButton.disabled = value;
@@ -654,35 +642,13 @@ Item 4
     }
   }
 
-  function saveSettings() {
-    try {
-      if (sourceFolder) {
-        saveSourceFolderName(sourceFolder.displayName);
-      } else if (savedSourceHandle) {
-        saveSourceFolderName(savedSourceHandle.name);
-      }
-      if (outputBaseFolder) {
-        localStorage.setItem("FSG2300.OutputBaseFolderName", outputBaseFolder.name);
-      } else if (savedOutputHandle) {
-        localStorage.setItem("FSG2300.OutputBaseFolderName", savedOutputHandle.name);
-      }
-    } catch {
-      ui.statusLabel.textContent = "設定檔儲存失敗";
-    }
-  }
-
   function saveSourceFolderName(name) {
     localStorage.setItem("FSG2300.SourceFolderName", name || "");
     localStorage.setItem("FSG2300.HasSourceFolder", name ? "1" : "");
   }
 
-  async function clearSourceFolderRecord() {
-    await clearDirectoryHandle("sourceHandle");
-    savedSourceHandle = null;
-    sourceFolder = null;
-    ui.sourceFolderLabel.textContent = "來源資料夾：未選取";
-    localStorage.removeItem("FSG2300.SourceFolderName");
-    localStorage.removeItem("FSG2300.HasSourceFolder");
+  function saveOutputFolderName(name) {
+    localStorage.setItem("FSG2300.OutputBaseFolderName", name || "");
   }
 
   async function restoreDirectoryHandles() {
@@ -716,6 +682,10 @@ Item 4
     } catch {
       ui.statusLabel.textContent = "設定檔讀取失敗，請重新選取資料夾";
     }
+  }
+
+  function canTryConvert() {
+    return Boolean((sourceFolder && hasProcessLogFolder(sourceFolder)) || savedSourceHandle);
   }
 
   async function hasPermission(handle, mode) {
