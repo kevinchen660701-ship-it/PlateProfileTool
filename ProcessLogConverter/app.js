@@ -366,10 +366,10 @@ Item 4
       saveSourceFolderName(sourceFolder.displayName);
       ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
       const hasProcessLog = hasProcessLogFolder(sourceFolder);
-      ui.convertButton.disabled = !hasProcessLog;
+      ui.convertButton.disabled = false;
       ui.statusLabel.textContent = hasProcessLog
         ? "已選取資料夾，可開始轉換"
-        : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
+        : "這個資料夾和子資料夾內找不到 ProcessLog.ini，請選原始 Ini 來源資料夾";
     } catch (error) {
       showError(error);
     }
@@ -452,6 +452,11 @@ Item 4
       return true;
     }
 
+    if (sourceFolder && !hasProcessLogFolder(sourceFolder) && !savedSourceHandle) {
+      ui.statusLabel.textContent = "目前來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選取原始 Ini 來源資料夾";
+      return false;
+    }
+
     if (savedSourceHandle) {
       try {
         if (!await ensurePermission(savedSourceHandle, "read")) {
@@ -463,14 +468,14 @@ Item 4
         sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
         ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
         const hasProcessLog = hasProcessLogFolder(sourceFolder);
-        ui.convertButton.disabled = !hasProcessLog;
+        ui.convertButton.disabled = false;
         ui.statusLabel.textContent = hasProcessLog
           ? "已選取資料夾，可開始轉換"
-          : "目前授權的來源資料夾找不到 ProcessLog.ini，請重新按「選取資料夾」選一次";
+          : "目前授權的來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選取原始 Ini 來源資料夾";
         return hasProcessLog;
       } catch (error) {
         sourceFolder = null;
-        ui.convertButton.disabled = true;
+        ui.convertButton.disabled = false;
         showError(error);
         return false;
       }
@@ -491,10 +496,10 @@ Item 4
     sourceFolder = await buildSourceFromDirectoryHandle(handle);
     const hasProcessLog = hasProcessLogFolder(sourceFolder);
     ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-    ui.convertButton.disabled = !hasProcessLog;
+    ui.convertButton.disabled = false;
     ui.statusLabel.textContent = hasProcessLog
       ? "已選取資料夾，可開始轉換"
-      : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
+      : "這個資料夾和子資料夾內找不到 ProcessLog.ini，請選原始 Ini 來源資料夾";
   }
 
   async function pickSourceDirectory() {
@@ -552,7 +557,7 @@ Item 4
   function setBusy(value) {
     isBusy = value;
     ui.selectFolderButton.disabled = value;
-    ui.convertButton.disabled = value || !canTryConvert();
+    ui.convertButton.disabled = value;
     ui.cancelButton.disabled = !value;
     ui.cancelButton.hidden = !value;
     ui.releaseNoteButton.disabled = value;
@@ -682,10 +687,6 @@ Item 4
     } catch {
       ui.statusLabel.textContent = "設定檔讀取失敗，請重新選取資料夾";
     }
-  }
-
-  function canTryConvert() {
-    return Boolean((sourceFolder && hasProcessLogFolder(sourceFolder)) || savedSourceHandle);
   }
 
   async function hasPermission(handle, mode) {
