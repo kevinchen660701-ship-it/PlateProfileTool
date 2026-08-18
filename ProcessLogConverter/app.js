@@ -358,7 +358,7 @@ Item 4
       saveSettings();
       ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
       const hasProcessLog = hasProcessLogFolder(sourceFolder);
-      ui.convertButton.disabled = !hasProcessLog;
+      ui.convertButton.disabled = false;
       ui.statusLabel.textContent = hasProcessLog
         ? "已選取資料夾，可開始轉換"
         : "這個資料夾和子資料夾內找不到 ProcessLog.ini";
@@ -450,7 +450,13 @@ Item 4
         if (!hasProcessLog) {
           ui.progressBar.value = 0;
           ui.remainTimeLabel.textContent = "預估剩餘時間：--:--:--";
-          ui.statusLabel.textContent = "上次來源資料夾找不到 ProcessLog.ini";
+          ui.statusLabel.textContent = "目前授權的來源資料夾找不到 ProcessLog.ini，請重新按「選取資料夾」選一次";
+          await clearDirectoryHandle("sourceHandle");
+          savedSourceHandle = null;
+          sourceFolder = null;
+          ui.sourceFolderLabel.textContent = "來源資料夾：未選取";
+          localStorage.removeItem("FSG2300.SourceFolderName");
+          localStorage.removeItem("FSG2300.HasSourceFolder");
           return;
         }
       }
@@ -525,7 +531,7 @@ Item 4
   function setBusy(value) {
     isBusy = value;
     ui.selectFolderButton.disabled = value;
-    ui.convertButton.disabled = value || (!sourceFolder && !savedSourceHandle) || (sourceFolder && !hasProcessLogFolder(sourceFolder));
+    ui.convertButton.disabled = value || (!sourceFolder && !savedSourceHandle);
     ui.cancelButton.disabled = !value;
     ui.cancelButton.hidden = !value;
     ui.releaseNoteButton.disabled = value;
@@ -724,6 +730,19 @@ Item 4
       return await transactionRequest(db, "readonly", (store) => store.get(key));
     } finally {
       db.close();
+    }
+  }
+
+  async function clearDirectoryHandle(key) {
+    if (!("indexedDB" in window)) {
+      return;
+    }
+    try {
+      const db = await openSettingsDb();
+      await transactionRequest(db, "readwrite", (store) => store.delete(key));
+      db.close();
+    } catch {
+      ui.statusLabel.textContent = "設定檔清除失敗，請重新選取資料夾";
     }
   }
 
