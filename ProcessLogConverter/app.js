@@ -362,9 +362,10 @@ Item 4
     }
 
     try {
-      sourceFolder = await buildSourceFromFileList(files);
-      const hasProcessLog = hasProcessLogFolder(sourceFolder);
+      const selectedSourceFolder = await buildSourceFromFileList(files);
+      const hasProcessLog = hasProcessLogFolder(selectedSourceFolder);
       if (hasProcessLog) {
+        sourceFolder = selectedSourceFolder;
         saveSourceFolderName(sourceFolder.displayName);
         ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
       } else {
@@ -375,7 +376,7 @@ Item 4
       ui.convertButton.disabled = false;
       ui.statusLabel.textContent = hasProcessLog
         ? "已選取資料夾，可開始轉換"
-        : "剛選的資料夾找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾，不要選 PPT 輸出資料夾";
+        : buildProcessLogNotFoundMessage(selectedSourceFolder, "剛選的資料夾");
     } catch (error) {
       showError(error);
     }
@@ -471,13 +472,16 @@ Item 4
         }
 
         ui.statusLabel.textContent = "正在檢查來源資料夾...";
-        sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
-        ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-        const hasProcessLog = hasProcessLogFolder(sourceFolder);
+        const selectedSourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
+        ui.sourceFolderLabel.textContent = "來源資料夾：" + selectedSourceFolder.displayName;
+        const hasProcessLog = hasProcessLogFolder(selectedSourceFolder);
+        if (hasProcessLog) {
+          sourceFolder = selectedSourceFolder;
+        }
         ui.convertButton.disabled = false;
         ui.statusLabel.textContent = hasProcessLog
           ? "已選取資料夾，可開始轉換"
-          : "目前授權的來源資料夾找不到 ProcessLog.ini，請按「選取資料夾」重新選 Desktop\\Ini 底下的原始來源資料夾";
+          : buildProcessLogNotFoundMessage(selectedSourceFolder, "目前授權的來源資料夾");
         if (!hasProcessLog) {
           await clearSourceFolderRecord();
         }
@@ -500,9 +504,10 @@ Item 4
     ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
     ui.statusLabel.textContent = "正在檢查來源資料夾...";
 
-    sourceFolder = await buildSourceFromDirectoryHandle(handle);
-    const hasProcessLog = hasProcessLogFolder(sourceFolder);
+    const selectedSourceFolder = await buildSourceFromDirectoryHandle(handle);
+    const hasProcessLog = hasProcessLogFolder(selectedSourceFolder);
     if (hasProcessLog) {
+      sourceFolder = selectedSourceFolder;
       savedSourceHandle = handle;
       saveSourceFolderName(handle.name);
       await saveDirectoryHandle("sourceHandle", handle);
@@ -514,7 +519,7 @@ Item 4
     ui.convertButton.disabled = false;
     ui.statusLabel.textContent = hasProcessLog
       ? "已選取資料夾，可開始轉換"
-      : "剛選的資料夾「" + handle.name + "」找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾，不要選 PPT 輸出資料夾";
+      : buildProcessLogNotFoundMessage(selectedSourceFolder, "剛選的資料夾「" + handle.name + "」");
   }
 
   async function pickSourceDirectory() {
@@ -888,18 +893,39 @@ Item 4
   function getProcessLogFolders(source) {
     const folders = [];
     for (const file of source.byPath.values()) {
-      if (file.name.toLowerCase() === PROCESS_LOG_FILE_NAME.toLowerCase()) {
+      if (isProcessLogFileName(file.name)) {
         folders.push(file.dirPath);
       }
     }
     return Array.from(new Set(folders)).sort(compareText);
   }
 
+  function isProcessLogFileName(name) {
+    return normalizeFileNameForMatch(name) === normalizeFileNameForMatch(PROCESS_LOG_FILE_NAME);
+  }
+
+  function normalizeFileNameForMatch(name) {
+    return String(name || "")
+      .normalize("NFKC")
+      .replace(/[\u200b-\u200f\ufeff]/g, "")
+      .trim()
+      .toLowerCase();
+  }
+
+  function buildProcessLogNotFoundMessage(source, prefix) {
+    const files = source ? Array.from(source.byPath.values()).sort(comparePath) : [];
+    const preview = files.slice(0, 5).map((file) => file.relativePath).join("、");
+    const suffix = files.length > 0
+      ? "；實際掃到 " + files.length + " 個檔案：" + preview
+      : "；實際掃到 0 個檔案";
+    return prefix + "找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾" + suffix;
+  }
+
   function getWaferFiles(source, folderPath) {
     const list = source.byDir.get(folderPath.toLowerCase()) || [];
     return list
       .filter((file) => file.name.toLowerCase().endsWith(".ini"))
-      .filter((file) => file.name.toLowerCase() !== PROCESS_LOG_FILE_NAME.toLowerCase())
+      .filter((file) => !isProcessLogFileName(file.name))
       .sort(comparePath);
   }
 
