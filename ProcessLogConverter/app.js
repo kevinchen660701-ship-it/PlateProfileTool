@@ -341,11 +341,14 @@ Item 4
       if ("showDirectoryPicker" in window) {
         const handle = await window.showDirectoryPicker({ mode: "read" });
         savedSourceHandle = handle;
+        sourceFolder = null;
         ui.sourceFolderLabel.textContent = "來源資料夾：" + handle.name;
-        ui.statusLabel.textContent = "正在讀取資料夾...";
+        ui.statusLabel.textContent = "已選取資料夾，可開始轉換";
+        ui.convertButton.disabled = false;
         saveSourceFolderName(handle.name);
         await saveDirectoryHandle("sourceHandle", handle);
-        sourceFolder = await buildSourceFromDirectoryHandle(handle);
+        saveSettings();
+        return;
       } else {
         ui.folderInput.value = "";
         ui.folderInput.click();
@@ -397,6 +400,7 @@ Item 4
         if (!await ensurePermission(savedSourceHandle, "read")) {
           return;
         }
+        ui.statusLabel.textContent = "正在讀取資料夾...";
         sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
         ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
         const hasProcessLog = hasProcessLogFolder(sourceFolder);
