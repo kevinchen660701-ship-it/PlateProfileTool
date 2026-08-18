@@ -893,15 +893,19 @@ Item 4
   function getProcessLogFolders(source) {
     const folders = [];
     for (const file of source.byPath.values()) {
-      if (isProcessLogFileName(file.name)) {
+      if (isProcessLogFile(file)) {
         folders.push(file.dirPath);
       }
     }
     return Array.from(new Set(folders)).sort(compareText);
   }
 
+  function isProcessLogFile(file) {
+    return isProcessLogFileName(file && (file.relativePath || file.name));
+  }
+
   function isProcessLogFileName(name) {
-    return normalizeFileNameForMatch(name) === normalizeFileNameForMatch(PROCESS_LOG_FILE_NAME);
+    return normalizeFileNameForMatch(basename(name)) === normalizeFileNameForMatch(PROCESS_LOG_FILE_NAME);
   }
 
   function normalizeFileNameForMatch(name) {
@@ -915,17 +919,23 @@ Item 4
   function buildProcessLogNotFoundMessage(source, prefix) {
     const files = source ? Array.from(source.byPath.values()).sort(comparePath) : [];
     const preview = files.slice(0, 5).map((file) => file.relativePath).join("、");
+    const iniPreview = files
+      .filter((file) => normalizeFileNameForMatch(file.relativePath).includes(".ini"))
+      .slice(0, 8)
+      .map((file) => file.relativePath)
+      .join("、");
     const suffix = files.length > 0
       ? "；實際掃到 " + files.length + " 個檔案：" + preview
       : "；實際掃到 0 個檔案";
-    return prefix + "找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾" + suffix;
+    return prefix + "找不到 ProcessLog.ini，請選 Desktop\\Ini 底下的原始來源資料夾" + suffix
+      + (iniPreview ? "；掃到的 ini：" + iniPreview : "");
   }
 
   function getWaferFiles(source, folderPath) {
     const list = source.byDir.get(folderPath.toLowerCase()) || [];
     return list
       .filter((file) => file.name.toLowerCase().endsWith(".ini"))
-      .filter((file) => !isProcessLogFileName(file.name))
+      .filter((file) => !isProcessLogFile(file))
       .sort(comparePath);
   }
 
