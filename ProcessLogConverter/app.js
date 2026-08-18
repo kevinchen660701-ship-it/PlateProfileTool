@@ -400,25 +400,17 @@ Item 4
         if (!await ensurePermission(savedSourceHandle, "read")) {
           return;
         }
-        ui.statusLabel.textContent = "正在讀取資料夾...";
-        sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
-        ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
-        const hasProcessLog = hasProcessLogFolder(sourceFolder);
-        ui.convertButton.disabled = !hasProcessLog;
-        if (!hasProcessLog) {
-          ui.statusLabel.textContent = "上次來源資料夾找不到 ProcessLog.ini";
-          return;
-        }
+        ui.sourceFolderLabel.textContent = "來源資料夾：" + savedSourceHandle.name;
       } catch (error) {
         showError(error);
         return;
       }
     }
 
-    if (!sourceFolder) {
+    if (!sourceFolder && !savedSourceHandle) {
       window.alert("請先選取來源資料夾。");
       return;
-      }
+    }
 
     let outputDirectoryHandle = null;
     outputFolderName = makeOutputFolderName();
@@ -449,6 +441,20 @@ Item 4
     ui.statusLabel.textContent = "正在轉換...";
 
     try {
+      if (!sourceFolder && savedSourceHandle) {
+        ui.statusLabel.textContent = "正在讀取資料夾...";
+        sourceFolder = await buildSourceFromDirectoryHandle(savedSourceHandle);
+        ui.sourceFolderLabel.textContent = "來源資料夾：" + sourceFolder.displayName;
+        const hasProcessLog = hasProcessLogFolder(sourceFolder);
+        ui.convertButton.disabled = !hasProcessLog;
+        if (!hasProcessLog) {
+          ui.progressBar.value = 0;
+          ui.remainTimeLabel.textContent = "預估剩餘時間：--:--:--";
+          ui.statusLabel.textContent = "上次來源資料夾找不到 ProcessLog.ini";
+          return;
+        }
+      }
+
       const result = await convertFolder(sourceFolder, reportProgress, isCancellationRequested);
       throwIfCancellationRequested();
 
