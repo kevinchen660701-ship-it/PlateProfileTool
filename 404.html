@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page Not Found</title>
+</head>
+<body>
+  <script>
+    (function () {
+      var correctBase = "/PlateProfileTool/ProcessLogConverter/";
+      var match = location.pathname.match(/^\/PlateProfileTool\/ProcesslogConverter\/?(.*)$/i);
+      if (match && location.pathname.indexOf(correctBase) !== 0) {
+        var suffix = match[1] || "";
+        location.replace(correctBase + suffix + location.search + location.hash);
+      }
+    }());
+  </script>
+  <p>找不到頁面。ProcessLogConverter 請使用正確大小寫網址。</p>
+  <p><a href="/PlateProfileTool/ProcessLogConverter/">前往 ProcessLogConverter</a></p>
+</body>
+</html>
