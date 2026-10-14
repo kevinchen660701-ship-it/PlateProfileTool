@@ -409,24 +409,59 @@
       --rock: 0deg;
     }
 
-    .jig.one { left: 50%; top: 34%; }
-    .jig.two { left: 31%; top: 56%; }
-    .jig.three { left: 69%; top: 56%; }
-    .jig.four { left: 50%; top: 76%; }
+    .jig.one {
+      left: 50%;
+      top: 34%;
+      --support-x: -176%;
+      --support-y: -45%;
+      --arm-angle: 23deg;
+      --arm-length: 294%;
+      --fork-rotate: 112deg;
+      --support-rotate: 23deg;
+    }
+
+    .jig.two {
+      left: 31%;
+      top: 56%;
+      --support-x: -84%;
+      --support-y: 235%;
+      --arm-angle: -54deg;
+      --arm-length: 229%;
+      --fork-rotate: 36deg;
+      --support-rotate: -54deg;
+    }
+
+    .jig.three {
+      left: 69%;
+      top: 56%;
+      --support-x: 184%;
+      --support-y: -176%;
+      --arm-angle: 121deg;
+      --arm-length: 263%;
+      --fork-rotate: -149deg;
+      --support-rotate: -59deg;
+    }
+
+    .jig.four {
+      left: 50%;
+      top: 76%;
+      --support-x: 276%;
+      --support-y: 116%;
+      --arm-angle: -164deg;
+      --arm-length: 235%;
+      --fork-rotate: -74deg;
+      --support-rotate: 16deg;
+    }
 
     .fork-rig {
       position: absolute;
       inset: 0;
       z-index: 3;
       transform: rotate(var(--rock));
-      transform-origin: 50% -165%;
+      transform-origin: var(--support-x) var(--support-y);
       pointer-events: none;
       transition: transform .08s linear;
     }
-
-    .jig.two .fork-rig { transform-origin: -165% 50%; }
-    .jig.three .fork-rig { transform-origin: 165% 50%; }
-    .jig.four .fork-rig { transform-origin: 50% 165%; }
 
     .jig-rotor {
       position: relative;
@@ -450,90 +485,67 @@
       top: 50%;
       width: 154%;
       height: 154%;
-      transform: translate(-50%, -50%);
-      background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cpath d='M 24 104 A 52 52 0 1 1 104 104' fill='none' stroke='%234f83a7' stroke-width='10' stroke-linecap='round'/%3E%3Cpath d='M 29 96 A 46 46 0 1 1 99 96' fill='none' stroke='%238cb7d0' stroke-width='3' stroke-linecap='round' opacity='.55'/%3E%3C/svg%3E");
+      transform: translate(-50%, -50%) rotate(var(--fork-rotate));
+      background: center / 100% 100% no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Cpath d='M 24 104 A 52 52 0 1 1 104 104' fill='none' stroke='%23bd6a21' stroke-width='12' stroke-linecap='round'/%3E%3Cpath d='M 30 96 A 45 45 0 1 1 98 96' fill='none' stroke='%23efb06b' stroke-width='3' stroke-linecap='round' opacity='.72'/%3E%3C/svg%3E");
       pointer-events: none;
       filter: drop-shadow(0 2px 3px rgba(20, 42, 58, .24));
     }
 
-    .jig.two .jig-fork { transform: translate(-50%, -50%) rotate(-90deg); }
-    .jig.three .jig-fork { transform: translate(-50%, -50%) rotate(90deg); }
-    .jig.four .jig-fork { transform: translate(-50%, -50%) rotate(180deg); }
-
     .jig-stem {
       position: absolute;
-      z-index: 4;
-      left: 50%;
-      bottom: 94%;
-      width: 31%;
-      height: 81%;
-      transform: translateX(-50%);
-      border-radius: 11px;
-      background: linear-gradient(90deg, #95bfd7, #4f83a7);
-      border: 2px solid rgba(33, 82, 113, .4);
+      z-index: 2;
+      left: var(--support-x);
+      top: var(--support-y);
+      width: var(--arm-length);
+      height: 22%;
+      transform-origin: 0 50%;
+      transform: rotate(var(--arm-angle));
+      border-radius: 999px 32px 32px 999px;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.2), transparent 18%),
+        linear-gradient(180deg, #d88332 0%, #b65d1c 52%, #8f4615 100%);
+      border: 2px solid rgba(95, 49, 18, .42);
+      box-shadow: inset 0 2px 3px rgba(255,255,255,.28), 0 3px 6px rgba(0,0,0,.22);
     }
 
     .fork-support {
       position: absolute;
       z-index: 5;
-      left: 50%;
-      bottom: 165%;
-      width: 46%;
+      left: var(--support-x);
+      top: var(--support-y);
+      width: 70%;
       aspect-ratio: 1;
-      transform: translate(-50%, 50%);
-      border-radius: 10px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
       background:
-        radial-gradient(circle at 50% 50%, #d8dde0 0 22%, #8f9aa2 23% 34%, transparent 35%),
-        linear-gradient(135deg, #5f8fb1, #3e7197);
-      border: 2px solid rgba(34, 77, 105, .55);
-      box-shadow: inset 0 1px 3px rgba(255,255,255,.45), 0 2px 5px rgba(0,0,0,.2);
+        radial-gradient(circle at 50% 50%, #dfe4e7 0 23%, #88959e 24% 35%, transparent 36%),
+        repeating-radial-gradient(circle, transparent 0 27%, rgba(52,61,66,.34) 28% 30%, transparent 31% 43%),
+        linear-gradient(145deg, #c8d0d5, #6e7b83);
+      border: 3px solid rgba(63, 72, 77, .52);
+      box-shadow: inset 0 2px 4px rgba(255,255,255,.56), 0 3px 7px rgba(0,0,0,.24);
     }
 
-    .jig.two .jig-stem,
-    .jig.three .jig-stem {
+    .fork-support::before {
+      content: "";
+      position: absolute;
+      left: 50%;
       top: 50%;
-      bottom: auto;
-      width: 81%;
-      height: 31%;
-      transform: translateY(-50%);
+      width: 88%;
+      height: 42%;
+      transform: translate(-50%, -50%) rotate(var(--support-rotate));
+      border-radius: 8px;
+      background: linear-gradient(180deg, #d98635, #a84f17);
+      border: 2px solid rgba(91, 45, 14, .45);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,.3);
     }
 
-    .jig.two .jig-stem {
-      left: auto;
-      right: 94%;
-      background: linear-gradient(180deg, #95bfd7, #4f83a7);
-    }
-
-    .jig.two .fork-support {
-      left: auto;
-      right: 165%;
-      top: 50%;
-      bottom: auto;
-      transform: translate(50%, -50%);
-    }
-
-    .jig.three .jig-stem {
-      left: 94%;
-      background: linear-gradient(180deg, #95bfd7, #4f83a7);
-    }
-
-    .jig.three .fork-support {
-      left: 165%;
-      top: 50%;
-      bottom: auto;
-      transform: translate(-50%, -50%);
-    }
-
-    .jig.four .jig-stem {
-      top: 94%;
-      bottom: auto;
-      background: linear-gradient(90deg, #4f83a7, #95bfd7);
-    }
-
-    .jig.four .fork-support {
-      top: 165%;
-      bottom: auto;
-      transform: translate(-50%, -50%);
+    .fork-support::after {
+      content: "";
+      position: absolute;
+      inset: 23%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 36% 28%, #f2f5f6 0 12%, #adb7bd 32%, #77838b 100%);
+      border: 2px solid rgba(55, 63, 68, .48);
     }
 
     .slurry-nozzle {
