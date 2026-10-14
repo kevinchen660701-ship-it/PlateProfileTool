@@ -1,11 +1,6 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-  <!-- auth-gateway:start -->
-  <style>html.auth-pending{visibility:hidden}</style>
-  <script>document.documentElement.classList.add("auth-pending")</script>
-  <script src="https://site-auth-gateway.cloudflare-authgateway.workers.dev/auth-check.js" data-site="Plate15BS" defer></script>
-  <!-- auth-gateway:end -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>15B-S Plate Shape Simulator</title>
@@ -359,8 +354,8 @@
       overflow: hidden;
       border: 2px solid #607487;
       border-radius: 8px;
-      --plate-size: min(82%, 420px);
-      --jig-size: min(22%, 112px);
+      --plate-size: min(78%, 400px);
+      --jig-size: min(20%, 104px);
       background:
         radial-gradient(circle at 50% 45%, rgba(255,255,255,.18), transparent 40%),
         linear-gradient(145deg, #82a7c1, #4f7b99 45%, #335a77);
@@ -413,9 +408,10 @@
       transform: translate(-50%, -50%);
     }
 
-    .jig.one { left: 50%; top: 38%; }
-    .jig.two { left: 32%; top: 59%; }
-    .jig.three { left: 68%; top: 59%; }
+    .jig.one { left: 50%; top: 34%; }
+    .jig.two { left: 31%; top: 56%; }
+    .jig.three { left: 69%; top: 56%; }
+    .jig.four { left: 50%; top: 76%; }
 
     .jig-rotor {
       position: relative;
@@ -445,6 +441,10 @@
       filter: drop-shadow(0 2px 3px rgba(20, 42, 58, .24));
     }
 
+    .jig.two .jig-fork { transform: translate(-50%, -50%) rotate(-90deg); }
+    .jig.three .jig-fork { transform: translate(-50%, -50%) rotate(90deg); }
+    .jig.four .jig-fork { transform: translate(-50%, -50%) rotate(180deg); }
+
     .jig-stem {
       position: absolute;
       z-index: 4;
@@ -456,6 +456,32 @@
       border-radius: 11px;
       background: linear-gradient(90deg, #95bfd7, #4f83a7);
       border: 2px solid rgba(33, 82, 113, .4);
+    }
+
+    .jig.two .jig-stem,
+    .jig.three .jig-stem {
+      top: 50%;
+      bottom: auto;
+      width: 81%;
+      height: 31%;
+      transform: translateY(-50%);
+    }
+
+    .jig.two .jig-stem {
+      left: auto;
+      right: 94%;
+      background: linear-gradient(180deg, #95bfd7, #4f83a7);
+    }
+
+    .jig.three .jig-stem {
+      left: 94%;
+      background: linear-gradient(180deg, #95bfd7, #4f83a7);
+    }
+
+    .jig.four .jig-stem {
+      top: 94%;
+      bottom: auto;
+      background: linear-gradient(90deg, #4f83a7, #95bfd7);
     }
 
     .slurry-nozzle {
@@ -930,6 +956,11 @@
               <div class="jig-rotor"></div>
             </div>
             <div class="jig three">
+              <div class="jig-fork"></div>
+              <div class="jig-stem"></div>
+              <div class="jig-rotor"></div>
+            </div>
+            <div class="jig four">
               <div class="jig-fork"></div>
               <div class="jig-stem"></div>
               <div class="jig-rotor"></div>
@@ -1467,6 +1498,8 @@
           holder.style.transform = `translate(-50%, -50%) translateX(${(-swing).toFixed(1)}px)`;
         } else if (index === 2) {
           holder.style.transform = `translate(-50%, -50%) translateX(${swing.toFixed(1)}px)`;
+        } else if (index === 3) {
+          holder.style.transform = `translate(-50%, -50%) translateY(${(swing * 0.62).toFixed(1)}px)`;
         }
       });
       jigRotors.forEach((rotor, index) => {
