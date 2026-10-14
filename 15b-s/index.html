@@ -419,10 +419,14 @@
       inset: 0;
       z-index: 3;
       transform: rotate(var(--rock));
-      transform-origin: 50% 50%;
+      transform-origin: 50% -165%;
       pointer-events: none;
       transition: transform .08s linear;
     }
+
+    .jig.two .fork-rig { transform-origin: -165% 50%; }
+    .jig.three .fork-rig { transform-origin: 165% 50%; }
+    .jig.four .fork-rig { transform-origin: 50% 165%; }
 
     .jig-rotor {
       position: relative;
@@ -994,34 +998,34 @@
             </div>
             <div class="plate-disk" id="plateDisk"></div>
             <div class="jig one">
+              <div class="fork-support"></div>
               <div class="fork-rig">
                 <div class="jig-fork"></div>
                 <div class="jig-stem"></div>
-                <div class="fork-support"></div>
               </div>
               <div class="jig-rotor"></div>
             </div>
             <div class="jig two">
+              <div class="fork-support"></div>
               <div class="fork-rig">
                 <div class="jig-fork"></div>
                 <div class="jig-stem"></div>
-                <div class="fork-support"></div>
               </div>
               <div class="jig-rotor"></div>
             </div>
             <div class="jig three">
+              <div class="fork-support"></div>
               <div class="fork-rig">
                 <div class="jig-fork"></div>
                 <div class="jig-stem"></div>
-                <div class="fork-support"></div>
               </div>
               <div class="jig-rotor"></div>
             </div>
             <div class="jig four">
+              <div class="fork-support"></div>
               <div class="fork-rig">
                 <div class="jig-fork"></div>
                 <div class="jig-stem"></div>
-                <div class="fork-support"></div>
               </div>
               <div class="jig-rotor"></div>
             </div>
